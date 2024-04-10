@@ -5,6 +5,7 @@ venvs/*
 # IDEs
 .spyproject/
 .vscode/
+*.code-workspace
 
 # Automated testing
 .tox

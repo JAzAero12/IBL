@@ -29,63 +29,32 @@ class DrelaGilesLaminar(IBLMethod):
 
     # Requires nu, u_e, du_edx, M_e and dM_edx
     def __init__(self, nu: float = 1.0, U_e: Optional[Any] = None,
-                 dU_edx: Optional[Any] = None, #M_e: Optional[Any] = None,
+                 dU_edx: Optional[Any] = None, d2U_edx2: Optional[Any] = None, #M_e: Optional[Any] = None,
                  #dM_edx: Optional[Any] = None,
-                 #T_air: Optional[Any] = 288.15, #TODO, get second opinion
                  T_air: float = 288.15, R_air: float = 287, gamma: float = 1.4,
                  n_tilde_crit: float = 9, cf_crit: float = 0, ic = None) -> None:
                  #n_tilde_init: float = 0) -> None:
         if ic is None:
-            ic = FalknerSkanStagCondition(du_e=1,nu=nu)
+            ic = FalknerSkanStagCondition(u_e=1,du_e=1,nu=nu)
         super().__init__(nu=nu, u_e=U_e, du_e=dU_edx,
                          #ic=ManualCondition(delta_d=np.inf, delta_m=np.inf,
                           #                  delta_k=0))
                          ic = ic) #TODO is this the right way to do it?
     # For now anything related to 'kinematic' can just have the moniker 'km' -> shape_km
     #TODO get rid of setters? force the user to use FSStagCondition
-
-        self._ic.nu = nu
-        self._ic.du_e = float(self.du_e(0))
+        #import warnings
+        #warnings.filterwarnings("error", category=RuntimeWarning)
+        #self._ic.nu = nu
+        if ic is None:
+            self._ic.du_e = float(self.du_e(0))
 
         self.set_n_tilde_critical(n_tilde_crit)
-        self.set_separation_event(self.u_e,cf_crit)
+        #self.set_separation_event(self.u_e,cf_crit)
         self.n_tilde_init = 0
         self.t_air = T_air
         self.R_air = R_air
         self.gamma = gamma
-    #TODO remove getters/setters for delta_d delta_m
-    #@property
-    #def initial_delta_m(self) -> float:
-    #    """
-    #    Momentum thickness at start of integration.
-    #    Must be greater than zero.
-    #    """
-    #    return self._ic.delta_m()
 
-    #@initial_delta_m.setter
-    #def initial_delta_m(self, delta_m0: float) -> None:
-    #    if delta_m0 <= 0:
-    #        raise ValueError(f"Invalid initial momentum thickness: {delta_m0}")
-    #    #cast(ManualCondition, self._ic).del_m = delta_m0
-
-
-    
-
-
-    #@property
-    #def initial_shape_d(self) -> float:
-    #    """
-    #    Dispacement thickness at start of integration.
-    #    Must be greater than zero
-    #    """
-    #    return self._ic.shape_d()
-
-    #@initial_shape_d.setter
-    #def initial_shape_d(self, shape_d: float) -> None:
-    #    if shape_d <= 0:
-    #        raise ValueError(f"Invalid displacement shape factor: {shape_d}")
-    #    cast(FalknerSkanStagCondition, self._ic)._shape_d = shape_d
-    #    #cast(ManualCondition, self._ic).shape_d = shape_d
 
     def set_n_tilde_critical(self, n_tilde_crit: float) -> None:
         """
@@ -311,11 +280,9 @@ class DrelaGilesLaminar(IBLMethod):
             Relative tolerance for ODE solver
             Absolute tolerance for ODE solver
         """
-
-        self._ic.du_e = float(self.du_e(0))
-        self._ic.nu = self.nu
+        
         shape_d_ic = self._ic.shape_d()
-        u_e_ic = self.u_e(0)
+        u_e_ic = self._ic.u_e
         m_e_ic = self._mach(u_e_ic,self.t_air,self.R_air,self.gamma)
         shape_km_ic = (shape_d_ic - .29*m_e_ic**2)/(1+.113*m_e_ic**2)
         n_tilde_init = self.n_tilde_init
@@ -349,7 +316,6 @@ class DrelaGilesLaminar(IBLMethod):
         shape_km = f[1]
         #n_tilde = f[2]
 
-
         #TODO recheck everything -> probably good, good enough to check
         re_delta_m = u_e*delta_m/self._nu
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
@@ -361,11 +327,12 @@ class DrelaGilesLaminar(IBLMethod):
         d_ntild_dre_m = self._d_ntild_dre_m(shape_km)  # eq 35
         m_Hk = self._mfunc(shape_km) # eq 40
         l_Hk = self._lfunc(shape_km) # eq 39
-
+        #print(shape_km)
         f_p[0] = ddelta_m_dx
         f_p[1] = (dshape_k_dx - dshape_k_dre_m*dre_m_dx)/dshape_k_dshape_km  # d_Hk_xi
         f_p[2] = d_ntild_dre_m*((m_Hk + 1)/2) * l_Hk * (1/f[0])  # d_ntildae_xi
-        
+        #print(x) #TODO x value step size very small at .97... ish: N tilda? Goldstein Singularity? Flow separation?
+        pass
         return f_p
 
     @staticmethod
@@ -404,7 +371,10 @@ class DrelaGilesLaminar(IBLMethod):
     def _c_f_dg(shape_km: InputParam, re_delta_m: InputParam) -> npt.NDArray:
         'Add description here'
         shape_km = np.asarray(shape_km) #needed this line to declare that everthing is treated as array
-        #TODO add a similar (to heads method) checking scheme for 'reasonable' values?
+        shape_km[shape_km > 1.84e19] = 1.84e19
+        shape_km[shape_km < 1e-9] = 1e-9
+        re_delta_m = np.asarray(re_delta_m) #Avoids divide by zero errors
+        re_delta_m[abs(re_delta_m) < 1e-9] = 1e-9
         def lam_fric_low(shape_km: InputParam) -> InputParam:
             temp =  -0.067 + 0.01977*(7.4-shape_km)**2/(shape_km - 1)
             return (2/re_delta_m)*temp
@@ -438,7 +408,9 @@ class DrelaGilesLaminar(IBLMethod):
 
         shape_km = np.asarray(shape_km)
         #TODO add a similar (to heads method) checking scheme for 'reasonable' values?
-
+        #TODO added here
+        shape_km[shape_km > 1.84e19] = 1.84e19
+        shape_km[shape_km < 1e-9] = 1e-9
         def lam_Hk_low(shape_km: InputParam) -> InputParam:
             return  1.515 + 0.076*((4 - shape_km)**2)/shape_km
 
@@ -456,6 +428,11 @@ class DrelaGilesLaminar(IBLMethod):
         shape_km = np.asarray(shape_km)
         shape_k = np.asarray(shape_k)
         #TODO add a similar (to heads method) checking scheme for 'reasonable' values, maybe not?
+        #TODO added here
+        shape_km[shape_km > 1.84e19] = 1.84e19
+        shape_km[shape_km < 1e-9] = 1e-9
+        re_delta_m = np.asarray(re_delta_m) #Avoids divide by zero errors
+        re_delta_m[abs(re_delta_m) < 1e-9] = 1e-9
         temp = shape_k/(2*re_delta_m)
 
         def lam_CD_low(shape_km: InputParam) -> InputParam:
@@ -487,8 +464,10 @@ class DrelaGilesLaminar(IBLMethod):
         shape_den = DrelaGilesLaminar._shape_den(shape_km, m_e)
         shape_k = DrelaGilesLaminar._shape_k(shape_km)
         c_D = DrelaGilesLaminar._c_D(shape_km,shape_k,re_delta_m)
-        shape_d = DrelaGilesLaminar._shape_d(shape_k, m_e)
+        shape_d = DrelaGilesLaminar._shape_d(shape_km, m_e)
         temp1 = 2*c_D - 0.5*shape_k*c_f
+        u_e = np.asarray(u_e) #Avoids divide by zero errors
+        u_e[abs(u_e) < 1e-9] = 1e-9
         temp2 = (2*shape_den + shape_k*(1 - shape_d))*delta_m*du_e/u_e
         return (1/delta_m)*(temp1 - temp2)
 
@@ -561,6 +540,7 @@ class _DrelaGilesTransitionEvent(TermEvent):
     @override
     def _call_impl(self, x: float, f: npt.NDArray) -> float:
         # Returns the difference between the critical n tildae value and the current n tildae value
+        #print(f[2])#TODO so this never prints, so apparently this class is never activated?
         return self.n_tildae_crit - f[2] #kill event happens when sign changes
 
     # is n_tildae_crit properly declared, also default set to 9?

@@ -24,12 +24,23 @@ class InitialCondition(ABC):
     integral boundary layer solutions. This class is intended to provide
     """
 
-    def __init__(self, du_e: float, nu: float) -> None:
+    def __init__(self, u_e:float, du_e: float, nu: float) -> None:
+        self._u_e = np.inf
         self._du_e = np.inf
         self._nu = np.inf
-
+        
+        self.u_e = u_e
         self.du_e = du_e
         self.nu = nu
+
+    @property
+    def u_e(self) -> float:
+        """Add description here"""
+        return self._u_e
+    
+    @u_e.setter
+    def u_e(self, u_e: float) -> None:
+        self._u_e = u_e
 
     @property
     def du_e(self) -> float:
@@ -120,8 +131,8 @@ class FalknerSkanStagCondition(InitialCondition):
     solution to the stagnation point flow.
     """
 
-    def __init__(self, du_e: float, nu: float):
-        super().__init__(du_e, nu)
+    def __init__(self, u_e: float, du_e: float, nu: float):#TODO fixed it, maybe
+        super().__init__(u_e,du_e, nu)
         self._fpp0 = 1.23259
         self._shape_d = 2.2162
         self._shape_k = 1.6257
@@ -173,6 +184,8 @@ class FalknerSkanStagCondition(InitialCondition):
         float
             Momentum thickness.
         """
+        if self.du_e < 1e-9: #New Addition
+            self.du_e = 1e-9
         return np.sqrt(self.nu*self._eta_m*self._fpp0
                        / ((self._shape_d+2)*self.du_e))
 
@@ -207,7 +220,7 @@ class ManualCondition(InitialCondition):
     """
 
     def __init__(self, delta_d: float, delta_m: float, delta_k: float):
-        super().__init__(du_e=0.0, nu=1e-5)
+        super().__init__(u_e = 0.0, du_e=0.0, nu=1e-5)
         self.del_d = delta_d
         self.del_m = delta_m
         self.del_k = delta_k

@@ -332,8 +332,10 @@ class IBLMethod(ABC):
                  du_e: Optional[Any] = None, d2u_e: Optional[Any] = None,
                  ic: Optional[InitialCondition] = None):
         self._nu = nu
-        self._ic: InitialCondition = FalknerSkanStagCondition(0, nu)
-
+        if ic is None:
+            self._ic: InitialCondition = FalknerSkanStagCondition(0,0, nu)
+        else:
+            self._ic = ic
         # set the velocity terms
         if u_e is None:
             if du_e is not None:
@@ -348,7 +350,7 @@ class IBLMethod(ABC):
 
         # initialize other parameters
         if ic is None:
-            self._ic = FalknerSkanStagCondition(0, nu)
+            self._ic = FalknerSkanStagCondition(0,0, nu)
         else:
             self.set_initial_condition(ic)
 
@@ -545,6 +547,7 @@ class IBLMethod(ABC):
         # setup the initial conditions
         self._ic.nu = self._nu
         self._ic.du_e = float(self.du_e(x0))
+        self._ic.u_e = float(self.u_e(x0))
         y0, rtol_set, atol_set = self._ode_setup()
         if rtol_set is None:
             rtol = 1e-5

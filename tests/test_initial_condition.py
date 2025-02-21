@@ -12,8 +12,8 @@ class TestInitialConditions(unittest.TestCase):
 
     def test_setters(self) -> None:
         """Test initial condition setters."""
-        ic = FalknerSkanStagCondition(du_e=0.0, nu=1e-5)
-
+        ic = FalknerSkanStagCondition(u_e=0.0, du_e=0.0, nu=1e-5)
+        self.assertEqual(ic.u_e,0.0)
         self.assertEqual(ic.du_e, 0.0)
         self.assertEqual(ic.nu, 1e-5)
         with self.assertRaises(ValueError):
@@ -31,7 +31,7 @@ class TestInitialConditions(unittest.TestCase):
         delta_d = shape_d*delta_m
         delta_k = shape_k*delta_m
 
-        sc = FalknerSkanStagCondition(du_e=du_e, nu=nu)
+        sc = FalknerSkanStagCondition(u_e=0,du_e=du_e, nu=nu)
 
         self.assertEqual(sc.shape_d(), shape_d)
         self.assertEqual(sc.shape_k(), shape_k)

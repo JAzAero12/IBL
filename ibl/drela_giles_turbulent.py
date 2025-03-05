@@ -31,7 +31,7 @@ class DrelaGilesTurbulent(IBLMethod):
     def __init__(self, nu: float = 1.0, U_e: Optional[Any] = None,
                  dU_edx: Optional[Any] = None, d2U_edx2: Optional[Any] = None,
                  T_air: float = 288.15, R_air: float = 287, gamma: float = 1.4,
-                 cf_crit: float = 0, ic = None) -> None:
+                 cf_crit: float = 0., ic = None) -> None:
 
         if ic is None:
             ic = ManualCondition(delta_d=np.inf, delta_m=np.inf, delta_k=0)
@@ -299,13 +299,14 @@ class DrelaGilesTurbulent(IBLMethod):
         
         shape_d_ic = self._ic.shape_d()
         u_e_ic = self._ic.u_e
+        if abs(u_e_ic) < 1e-9: #Remove div by 0 errors
+            u_e_ic = 1e-9
         m_e_ic = self._mach(u_e_ic,self.t_air,self.R_air,self.gamma)
         shape_km_ic = (shape_d_ic - .29*m_e_ic**2)/(1+.113*m_e_ic**2)
         re_delta_m_ic = u_e_ic*self._ic.delta_m()/self.nu
         c_tau_eq_init = self._c_tau_eq(shape_km_ic,re_delta_m_ic,m_e_ic)
         c_tau_init = .7**2 *c_tau_eq_init
         return np.array([self._ic.delta_m(),shape_km_ic,float(c_tau_init)]), 1e-8, 1e-11
-        #return np.array([self._ic.delta_m(),shape_km_ic,float(c_tau_init)]), 1e-2, 1e-9 #TODO steps are very small for some reason
 
     @override
     def _ode_impl(self, x: InputParam,
@@ -336,6 +337,9 @@ class DrelaGilesTurbulent(IBLMethod):
         c_tau = f[2]
 
         #TODO recheck everything
+        if isinstance(u_e,(int,float)):
+            if abs(u_e) < 1e-9:
+                u_e = 1e-9
         re_delta_m = u_e*delta_m/self._nu
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         c_tau_eq = self._c_tau_eq(shape_km,re_delta_m,m_e)
@@ -351,6 +355,9 @@ class DrelaGilesTurbulent(IBLMethod):
         f_p[1] = (dshape_k_dx - dshape_k_dre_m*dre_m_dx)/dshape_k_dshape_km  # d_Hk_xi
         f_p[2] = self._dc_tau_dx(c_tau,c_tau_eq,delta)
 
+        #print('f')
+        #print([x,f])
+        #print('f_p')
         #print(f_p)
         #print(x)
         #print((f[2]/c_tau_eq)**(1/2))

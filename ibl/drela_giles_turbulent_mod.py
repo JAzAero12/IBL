@@ -18,6 +18,7 @@ from ibl.initial_condition import ManualCondition
 from ibl.initial_condition import FalknerSkanStagCondition
 from ibl.typing import InputParam
 from scipy.optimize import minimize
+import time
 
 class DrelaGilesTurbulentMOD(IBLMethod):
     """
@@ -43,8 +44,9 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         self.t_air = T_air
         self.R_air = R_air
         self.gamma = gamma
-        self.shape_km_bank = np.linspace(.1,7.4,400)
-        self.set_separation_event(self.u_e,cf_crit)
+        self.shape_km_bank_lo = np.linspace(.1,4.,400)
+        self.shape_km_bank_hi = np.arange(3.,7.401,.001)
+        self.set_separation_event(self.u_e,cf_crit,self.du_e)
 
         #Flag to switch between the two different shape_km equations
         self.shape_km_hi_flag = False
@@ -80,7 +82,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         cast(ManualCondition, self._ic).del_d = shape_d*self.initial_delta_m
 
     # The separation event is the same
-    def set_separation_event(self, u_e:Callable[[InputParam],npt.NDArray], cf_crit: float) -> None:
+    def set_separation_event(self, u_e:Callable[[InputParam],npt.NDArray], cf_crit: float, du_e:Callable[[InputParam],npt.NDArray]) -> None:
         """
         Set the cf value for flow separation.
 
@@ -94,8 +96,9 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         T_air = self.t_air
         R_air = self.R_air
         gamma = self.gamma
-        shape_km_bank = self.shape_km_bank
-        self._add_kill_event(_DrelaGilesSeparationEvent(cf_crit,u_e,self.nu,T_air,R_air,gamma,shape_km_bank))
+        shape_km_bank_lo = self.shape_km_bank_lo
+        shape_km_bank_hi = self.shape_km_bank_hi
+        self._add_kill_event(_DrelaGilesSeparationEvent(cf_crit,u_e,self.nu,T_air,R_air,gamma,shape_km_bank_lo,shape_km_bank_hi,du_e))
 
 
     @override
@@ -178,7 +181,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         if self._solution is None:
             raise ValueError("No valid solution.")
 
-        return self._solution(x)[0]
+        return self._solution(x)[1]
 
     @override
     def shape_d(self, x: InputParam) -> npt.NDArray:
@@ -198,11 +201,12 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         if self._solution is None:
             raise ValueError("No valid solution.")
         u_e = self.u_e(x)
+        du_e = self.du_e(x)
         delta_k = self._solution(x)[1]
         delta_m = self._solution(x)[0]
         shape_k = delta_k/delta_m
         re_delta_m = delta_m*u_e/self.nu
-        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank)
+        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank_lo,self.shape_km_bank_hi,du_e)
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         shape_d = self._shape_d(shape_km,m_e)
         return np.array(shape_d) # eq 15
@@ -250,11 +254,12 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
         delta_m = self._solution(x)[0]
         u_e = self.u_e(x)
+        du_e = self.du_e(x)
         u_e[np.abs(u_e) < 1e-6] = 1e-6
         re_delta_m = u_e*delta_m/self._nu
         delta_k = self._solution(x)[1]
         shape_k = delta_k/delta_m
-        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank)
+        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank_lo,self.shape_km_bank_hi,du_e)
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         fc = self._fc(m_e)
         c_f = self._c_f_dg(shape_km,re_delta_m,fc) # eq 17
@@ -282,10 +287,11 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         
         delta_m = self._solution(x)[0]
         u_e = self.u_e(x)
+        du_e = self.du_e(x)
         re_delta_m = u_e*delta_m/self._nu
         delta_k = self._solution(x)[1]
         shape_k = delta_k/delta_m
-        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank)       
+        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank_lo,self.shape_km_bank_hi,du_e)       
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         fc = self._fc(m_e)
         c_f = self._c_f_dg(shape_km,re_delta_m,fc)
@@ -353,13 +359,18 @@ class DrelaGilesTurbulentMOD(IBLMethod):
             if abs(u_e) < 1e-9:
                 u_e = 1e-9
         re_delta_m = u_e*delta_m/self._nu
+
+        if delta_m < 0:
+            pass
+
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         shape_k = delta_k/delta_m
-        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank)
+        shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank_lo,self.shape_km_bank_hi,du_e_dx)
 
         c_tau_eq = self._c_tau_eq(shape_km,re_delta_m,m_e)
+        c_tau = np.abs(c_tau)
 
-        #c_tau_eq = np.abs(c_tau_eq)
+        #c_tau_eq = np.abs(c_tau_eq) #TODO delete if not needed later
 
         delta = self._delta(delta_m,shape_km,m_e)
 
@@ -367,7 +378,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         ddelta_m_dx = self._ddelta_m_dx(delta_m, shape_km, re_delta_m, m_e, u_e, du_e_dx)  # eq 10
         #dre_m_dx = self._dre_m_dx(u_e, delta_m, du_e_dx, ddelta_m_dx, self._nu)
         #dshape_k_dshape_km = self._dshape_k_dshape_km(shape_km,re_delta_m)
-        dshape_k_dx = self._dshape_k_dx(delta_m, shape_km, u_e, du_e_dx, m_e, re_delta_m,c_tau)  # eq 11
+        #dshape_k_dx = self._dshape_k_dx(delta_m, shape_km, u_e, du_e_dx, m_e, re_delta_m,c_tau)  # eq 11
         u_s = self._u_s(shape_km,re_delta_m,m_e)
         f_c = self._fc(m_e)
         c_f = self._c_f_dg(shape_km,re_delta_m,f_c)
@@ -379,13 +390,19 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         f_p[1] = 2.*c_D - (shape_den/shape_k + 3. - m_e**2)*delta_m*shape_k*du_e_dx/u_e #Eq 12
         f_p[2] = self._dc_tau_dx(c_tau,c_tau_eq,delta)
 
+        if f_p[0] < 0:
+            pass
+
         self.xvec = np.append(self.xvec,x)
         if self.show_prog:
             print('~~~~~~~~~~~~~~')
             print(f)
-            #print(f_p)
+            print(f_p)
             print('~~~~~~~~~~~~~~')
             print(x)
+            if x > .58:
+                #time.sleep(.5)
+                pass
         pass
         return f_p
 
@@ -533,37 +550,85 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         return result
 
     @staticmethod
-    def _shape_k_inverse(shape_k:InputParam, re_delta_m:InputParam, shape_km_bank:InputParam) -> npt.NDArray: #TODO may not be the best implementation of the two equations
+    def _shape_k_inverse_lo(shape_k:InputParam, re_delta_m:InputParam,shape_km_bank_lo:InputParam) -> npt.NDArray:
         if not isinstance(shape_k,np.ndarray):
             shape_k = np.array([shape_k])
         if not isinstance(re_delta_m,np.ndarray):
             re_delta_m = np.array([re_delta_m])
+        
+        re_delta_m[abs(re_delta_m) < 1e-9] = 1e-9
 
         shape_0 = np.array([4. if Re < 400. else 3. + 400./Re for Re in re_delta_m])
         shape_km = np.zeros_like(shape_k)
 
         for i, (h_k, r_dm, h0) in enumerate(zip(shape_k,re_delta_m,shape_0)):
-            shape_k_bank = DrelaGilesTurbulentMOD._shape_k(shape_km_bank,r_dm*np.ones_like(shape_km_bank))
             def e24_lo(shape_km,shape_k):
                 temp  = 1.505 + 4./r_dm
                 temp2 = .165-1.6/np.sqrt(r_dm)
                 return (shape_k - (temp + temp2*((h0-shape_km)**1.6/shape_km)))**2
-            def e24_hi(shape_km,shape_k):
-                temp = 1.505 + 4./r_dm
-                temp2 = (shape_k-h0)**2
-                return (shape_k - (temp + temp2*(.04/shape_km + .007*np.log(r_dm)/(shape_km - h0 + 4./np.log(r_dm))**2)))**2
-            ig_idx = np.argmin(abs(shape_k_bank - h_k))
-            ig = [shape_km_bank[ig_idx]]
-            if shape_km_bank[ig_idx] < h0:
-                result = minimize(e24_lo, ig, args=(h_k,), bounds=[(0., 4.)], method='L-BFGS-B')
+            shape_k_bank_lo = DrelaGilesTurbulentMOD._shape_k(shape_km_bank_lo,r_dm*np.ones_like(shape_km_bank_lo))
+            guess_idx = np.argmin(abs(shape_k_bank_lo - h_k))
+            shape_km_lo_guess = shape_km_bank_lo[guess_idx]
+            result_lo = minimize(e24_lo, shape_km_lo_guess, args=(h_k,), bounds=[(0.1, 4.)], method='L-BFGS-B')
+            if result_lo.success:
+                    result_lo = result_lo.x[0]
             else:
-                result = minimize(e24_hi, ig, args=(h_k,), bounds=[(4., 7.4)], method='L-BFGS-B')
-            if result.success:
-                shape_km[i] = result.x[0]
+                result_lo = shape_km_lo_guess
+            if shape_km_lo_guess >= 4.:
+                pass
+            #result_lo = shape_km_lo_guess
+            shape_km[i] = result_lo
+        return shape_km
+
+    @staticmethod
+    def _shape_k_inverse_hi(shape_k:InputParam, re_delta_m:InputParam, shape_km_bank_hi:InputParam) -> npt.NDArray:
+        if not isinstance(shape_k,np.ndarray):
+            shape_k = np.array([shape_k])
+        if not isinstance(re_delta_m,np.ndarray):
+            re_delta_m = np.array([re_delta_m])
+        
+        re_delta_m[abs(re_delta_m) < 1e-9] = 1e-9
+        shape_0 = np.array([4. if Re < 400. else 3. + 400./Re for Re in re_delta_m])
+        shape_km = np.zeros_like(shape_k)
+        for i, (h_k, r_dm, h0) in enumerate(zip(shape_k,re_delta_m,shape_0)):
+            temp = 1.505 + 4./r_dm
+            temp2 = ((shape_km_bank_hi-h0)**2)*(.04/shape_km_bank_hi + .007*np.log(r_dm)/(shape_km_bank_hi - h0 + 4/np.log(r_dm))**2)
+            shape_k_bank_hi = temp + temp2
+            low_idx = np.argmin(abs(shape_k_bank_hi - h_k))
+            shape_km[i] = shape_km_bank_hi[low_idx]
+
+        return shape_km
+
+    @staticmethod
+    def _shape_k_inverse(shape_k:InputParam, re_delta_m:InputParam, shape_km_bank_lo:InputParam, shape_km_bank_hi:InputParam, du_e_dx:InputParam) -> npt.NDArray: #TODO may not be the best implementation of the two equations
+    
+        if not isinstance(shape_k,np.ndarray):
+            shape_k = np.array([shape_k])
+        if not isinstance(re_delta_m,np.ndarray):
+            re_delta_m = np.array([re_delta_m])
+
+        du_e_dx = np.asarray(du_e_dx)
+        if du_e_dx.shape ==():
+            du_e_dx = du_e_dx.reshape(-1)
+
+        du_e_dx = np.asarray(du_e_dx)
+
+        hiflag = False
+        shape_km = np.zeros_like(shape_k)
+        for idx, (h_k,r_dm,due) in enumerate(zip(shape_k,re_delta_m,du_e_dx)):
+            if not hiflag:
+                shape_km_temp = DrelaGilesTurbulentMOD._shape_k_inverse_lo(h_k,r_dm,shape_km_bank_lo)
+                if shape_km_temp >= (4.-1e-3) and due < 0:
+                    shape_km[idx] = DrelaGilesTurbulentMOD._shape_k_inverse_hi(h_k,r_dm,shape_km_bank_hi)
+                    hiflag = True
+                else:
+                    shape_km[idx] = shape_km_temp
             else:
-                shape_km[i] = float(np.array(ig))
-
-
+                shape_km[idx] = DrelaGilesTurbulentMOD._shape_k_inverse_hi(h_k,r_dm,shape_km_bank_hi)
+                if shape_km[idx] <= (4.+1e-3) and due > 0:
+                    shape_km[idx] = DrelaGilesTurbulentMOD._shape_k_inverse_lo(h_k,r_dm,shape_km_bank_lo)
+                    hiflag = False
+        
         return shape_km
 
     @staticmethod
@@ -632,7 +697,8 @@ class _DrelaGilesSeparationEvent(TermEvent):
         cf_crit: Displacement shape factor value that indicates separation
     """
 
-    def __init__(self, cf_crit: float, u_e:Callable[[InputParam],npt.NDArray], nu: float,T_air:float,R_air:float,gamma:float,shape_km_bank:npt.NDArray) -> None:
+    def __init__(self, cf_crit: float, u_e:Callable[[InputParam],npt.NDArray], nu: float,T_air:float,R_air:float,gamma:float,
+                 shape_km_bank_lo:npt.NDArray,shape_km_bank_hi:npt.NDArray, du_e:Callable[[InputParam],npt.NDArray]) -> None:
         """
         Initialize separation criteria for Head's method.
 
@@ -648,7 +714,9 @@ class _DrelaGilesSeparationEvent(TermEvent):
         self._T_air = T_air
         self._R_air = R_air
         self._gamma = gamma
-        self._shape_km_bank = shape_km_bank
+        self._shape_km_bank_lo = shape_km_bank_lo
+        self._shape_km_bank_hi = shape_km_bank_hi
+        self._du_e = du_e
 
     @override
     def _call_impl(self, x: float, f: npt.NDArray) -> float:
@@ -672,13 +740,14 @@ class _DrelaGilesSeparationEvent(TermEvent):
             shape factor and the current displacement shape factor.
         """
 
-        # f[0] is momentum thickness, f[1] is kinematic shape factor, f[2] is n_tilde
+        # f[0] is momentum thickness, f[1] is kinetic energy thickness, f[2] is n_tilde
         delta_k = f[1]
         u_e = self._u_e(x)
+        d_u_e_dx = self._du_e(x)
         re_delta_m = u_e*f[0]/self._nu
         shape_k = delta_k/f[0]
 
-        shape_km = DrelaGilesTurbulentMOD._shape_k_inverse(shape_k,re_delta_m,self._shape_km_bank)
+        shape_km = DrelaGilesTurbulentMOD._shape_k_inverse(shape_k,re_delta_m,self._shape_km_bank_lo,self._shape_km_bank_hi,d_u_e_dx)
 
         m_e = DrelaGilesTurbulentMOD._mach(u_e,self._T_air,self._R_air,self._gamma)
         fc = DrelaGilesTurbulentMOD._fc(m_e)

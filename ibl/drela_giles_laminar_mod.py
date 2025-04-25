@@ -34,11 +34,9 @@ class DrelaGilesLaminarMOD(IBLMethod):
     """
 
     def __init__(self, nu: float = 1.0, U_e: Optional[Any] = None,
-                 dU_edx: Optional[Any] = None, d2U_edx2: Optional[Any] = None, #M_e: Optional[Any] = None,
-                 #dM_edx: Optional[Any] = None,
+                 dU_edx: Optional[Any] = None, d2U_edx2: Optional[Any] = None,
                  T_air: float = 288.15, R_air: float = 287., gamma: float = 1.4,
                  n_tilde_crit: float = 9, cf_crit: float = 0, ic = None, show_prog = False, src=True) -> None:
-                 #n_tilde_init: float = 0) -> None:
         
         #Falkner-Skan Stagnation Condition is default initial condition
 
@@ -362,6 +360,22 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
         c_D = self._c_D(shape_km,shape_k,re_delta_m) # eq 18
         return .5*c_D*rho*u_e**3
+    
+    def n_tilde(self, x: InputParam) -> npt.NDArray:
+        """
+        Calculate the transition disturbance amplification value.
+
+        Parameters
+        ----------
+        x: InputParam
+            Streamwise loations to calculate this property.
+
+        Returns
+        -------
+        numpy.ndarray
+            Desired transition disturbance amplification value at the specified locations.
+        """
+        return self._solution(x)[2]
 
     @override
     def _ode_setup(self) -> Tuple[npt.NDArray, float, float]:
@@ -383,8 +397,8 @@ class DrelaGilesLaminarMOD(IBLMethod):
         #shape_km = self._shape_km(shape_d,m_e)
         #shape_k_init = self._shape_k(shape_km)
         #delta_k_init = shape_k_init*self._ic.delta_m()
-        #return np.array([self._ic.delta_m(),self._ic.delta_d(),n_tilde_init]), 1e-8, 1e-11
-        return np.array([self._ic.delta_m(),self._ic.delta_d(),n_tilde_init]), 1e-6, 1e-6
+        return np.array([self._ic.delta_m(),self._ic.delta_d(),n_tilde_init]), 1e-8, 1e-11
+        #return np.array([self._ic.delta_m(),self._ic.delta_d(),n_tilde_init]), 1e-6, 1e-6
 
     @override
     def _ode_impl(self, x: InputParam,
@@ -464,9 +478,9 @@ class DrelaGilesLaminarMOD(IBLMethod):
         self.xvec = np.append(self.xvec,x)
         if self.show_prog:
             print('~~~~~~~~~~~~~~')
-            print(f)
-            print(f_p)
-            print(x)
+            print('x = '+str(x))
+            print('f = '+str(f))
+            print('f_p = '+str(f_p))
             print('~~~~~~~~~~~~~~')
         return f_p
 
@@ -517,7 +531,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
     def _n_tild_ramp_cust(ratio:InputParam) -> InputParam:
         'Logistic Function for n_tilde values to replicate cubic ramp of XFOIL source code'
         k = 20 #OLD, KEEP
-        k = 30
+        k = 70
         scal = 1./(1.+np.exp(-1*k*(ratio)+2))
         return scal
 

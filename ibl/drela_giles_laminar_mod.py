@@ -69,11 +69,11 @@ class DrelaGilesLaminarMOD(IBLMethod):
         #self.u_inf = u_inf
 
         #A pre-declared list of shape_km and shape_k relations to quicken guesses
-        self.shape_km_bank_lo = np.arange(0.1, 4.1, 0.1)
-        self.shape_k_bank_lo = DrelaGilesLaminarMOD._shape_k(self.shape_km_bank_lo)
+        #self.shape_km_bank_lo = np.arange(0.1, 4.1, 0.1)
+        #self.shape_k_bank_lo = DrelaGilesLaminarMOD._shape_k(self.shape_km_bank_lo)
 
-        self.shape_km_bank_hi = np.arange(3.999,7.401,0.001) #Slight overlap
-        self.shape_k_bank_hi = DrelaGilesLaminarMOD._shape_k(self.shape_km_bank_hi)
+        #self.shape_km_bank_hi = np.arange(3.999,7.401,0.001) #Slight overlap
+        #self.shape_k_bank_hi = DrelaGilesLaminarMOD._shape_k(self.shape_km_bank_hi)
 
         self.set_separation_event(self.u_e,self.du_e,cf_crit,self.t_air,self.R_air,self.gamma)
 
@@ -358,7 +358,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
         delta_m = self._solution(x)[0]
         re_delta_m = u_e*delta_m/self._nu
 
-        c_D = self._c_D(shape_km,shape_k,re_delta_m) # eq 18
+        c_D = self._c_D(shape_km,shape_k,re_delta_m,self.src) # eq 18
         return .5*c_D*rho*u_e**3
     
     def n_tilde(self, x: InputParam) -> npt.NDArray:
@@ -471,7 +471,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
             if np.log10(abs(re_delta_m)) < re_crit_log: #Abs vals the first few re values
                 f_p[2] = 0.
             else:
-                const = self._n_tild_ramp_cust(np.log10(abs(re_delta_m))/re_crit_log-1)
+                const = self._n_tild_ramp_cust(np.log10(abs(re_delta_m))/re_crit_log-1,self.src)
                 #print(const)
                 f_p[2] = const*d_ntild_dre_m*((m_Hk + 1)/2) * l_Hk * (1/f[0])  # d_ntildae_xi
 
@@ -528,10 +528,12 @@ class DrelaGilesLaminarMOD(IBLMethod):
         return rfac
 
     @staticmethod
-    def _n_tild_ramp_cust(ratio:InputParam) -> InputParam:
+    def _n_tild_ramp_cust(ratio:InputParam, src:InputParam) -> InputParam:
         'Logistic Function for n_tilde values to replicate cubic ramp of XFOIL source code'
-        k = 20 #OLD, KEEP
-        k = 70
+        if not src:
+            k = 20 #OLD, KEEP
+        else:
+            k = 70
         scal = 1./(1.+np.exp(-1*k*(ratio)+2))
         return scal
 
@@ -762,7 +764,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
         return 0
 
     @staticmethod
-    def _shape_k(shape_km: InputParam,src=False) -> npt.NDArray:
+    def _shape_k(shape_km: InputParam,src: InputParam) -> npt.NDArray:
         'Kinetic Energy Shape Factor: Equation 16'
 
         shape_km = np.asarray(shape_km)
@@ -792,7 +794,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
 
     @staticmethod
-    def _c_D(shape_km: InputParam, shape_k: InputParam, re_delta_m: InputParam) -> npt.NDArray:
+    def _c_D(shape_km: InputParam, shape_k: InputParam, re_delta_m: InputParam, src: InputParam) -> npt.NDArray:
         'Dissipation Coefficient: Equation 18'
 
         shape_km = np.asarray(shape_km)
@@ -803,21 +805,32 @@ class DrelaGilesLaminarMOD(IBLMethod):
         re_delta_m[abs(re_delta_m) < 1e-9] = 1e-9
         temp = shape_k/(2.*re_delta_m)
 
-        def lam_CD_low(shape_km: InputParam) -> InputParam:
-            return (0.207 + 0.00205*(4. - shape_km)**5.5)
+        if src:
 
-        def lam_CD_high(shape_km: InputParam) -> InputParam:
-            #return (0.207 - 0.003*((shape_km - 4.)**2)/(1. + 0.02*shape_km**2))
-            #From modern XFOIL source code
-            hkb = shape_km - 4.
-            den = 1. + .02*hkb**2
-            return -.0016 * hkb**2/den + .207
-        
-        temp2 = np.piecewise(shape_km, [shape_km <= 4., shape_km > 4.], [lam_CD_low, lam_CD_high])
-        return temp*temp2
+            def lam_CD_low(shape_km: InputParam) -> InputParam:
+                return (0.207 + 0.00205*(4. - shape_km)**5.5)
+
+            def lam_CD_high(shape_km: InputParam) -> InputParam:
+                #From modern XFOIL source code
+                hkb = shape_km - 4.
+                den = 1. + .02*hkb**2
+                return -.0016 * hkb**2/den + .207
+
+            temp2 = np.piecewise(shape_km, [shape_km <= 4., shape_km > 4.], [lam_CD_low, lam_CD_high])
+            return temp*temp2
+    
+        else:
+            def lam_CD_low(shape_km: InputParam) -> InputParam:
+                    return (0.207 + 0.00205*(4. - shape_km)**5.5)
+
+            def lam_CD_high(shape_km: InputParam) -> InputParam:
+                return (0.207 - 0.003*((shape_km - 4.)**2)/(1. + 0.02*shape_km**2))
+            
+            temp2 = np.piecewise(shape_km, [shape_km <= 4., shape_km > 4.], [lam_CD_low, lam_CD_high])
+            return temp*temp2
 
     @staticmethod
-    def _dshape_k_dshape_km(shape_km: InputParam, src:bool=False) -> npt.NDArray:
+    def _dshape_k_dshape_km(shape_km: InputParam, src: InputParam) -> npt.NDArray:
         'Partial Derivative of Kinetic Energy Shape Factor with respect to Kinematic Shape Factor'
         shape_km = np.asarray(shape_km)
 
@@ -849,7 +862,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
         'Streamwise Derivative of Kinetic Energy Shape Factor: Equation 11'
         shape_den = DrelaGilesLaminarMOD._shape_den(shape_km, m_e)
         shape_k = DrelaGilesLaminarMOD._shape_k(shape_km,src)
-        c_D = DrelaGilesLaminarMOD._c_D(shape_k=shape_k,shape_km=shape_km,re_delta_m=re_delta_m)
+        c_D = DrelaGilesLaminarMOD._c_D(shape_k=shape_k,shape_km=shape_km,re_delta_m=re_delta_m,src=src)
         shape_d = DrelaGilesLaminarMOD._shape_d(shape_km, m_e)
         temp1 = 2.*c_D - 0.5*shape_k*c_f
         u_e = np.asarray(u_e) #Avoids divide by zero errors

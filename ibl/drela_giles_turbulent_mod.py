@@ -380,6 +380,32 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         
         
         return c_tau
+    
+    def c_tau_eq(self,x:InputParam) -> npt.NDArray:
+        """
+        Calculate the equilibrium shear stress coefficient.
+
+        Parameters
+        ----------
+        x: InputParam
+            Streamwise loations to calculate this property.
+
+        Returns
+        -------
+        numpy.ndarray
+            Desired equilibrium shear stress coefficient at the specified locations.
+        """
+
+        delta_m = self.delta_m(x)
+        shape_d = self.shape_d(x)
+        u_e = self.u_e(x)
+        re_delta_m = delta_m*u_e/self.nu
+        m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
+        shape_km = self._shape_km(shape_d,m_e)
+        src = self.src
+        cteq = self._c_tau_eq(shape_km,re_delta_m,m_e,src)
+
+        return cteq
 
     @override
     def _ode_setup(self) -> Tuple[npt.NDArray, float, float]:
@@ -418,16 +444,17 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
         c_tau_init = const**2 *c_tau_eq_init
 
-        c_tau_init = np.sqrt(c_tau_init)
         #As per described in the original paper
         #c_tau_init = .7**2 *c_tau_eq_init
         #In XFOIL source code, c_tau's square root is ST
         #c_tau_eq is CQT
-        print('DG Turbulent c_tau constant')
-        print(const)
+
 
         if self.c_tau_init is not None:
             c_tau_init = self.c_tau_init #Way to have manual input of c_tau
+
+        if self.src:
+            c_tau_init = np.sqrt(c_tau_init)
 
         return np.array([self._ic.delta_m(),self._ic.delta_d(),float(c_tau_init)]), 1e-8, 1e-11
         #return np.array([self._ic.delta_m(),self._ic.delta_d(),float(c_tau_init)]), 1e-6, 1e-6
@@ -474,14 +501,6 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         shape_km = self._shape_km(shape_d,m_e)
-
-        #Processing described in mfoil, pg 28
-        if isinstance(shape_km,(int,float)):
-            if shape_km < 1.00005:
-                shape_km = 1.00005
-                shape_d = self._shape_d(shape_km,m_e)
-        #shape_k = self._shape_k(shape_km,re_delta_m)
-        #shape_km = self._shape_k_inverse(shape_k,re_delta_m,self.shape_km_bank_lo,self.shape_km_bank_hi,du_e_dx)
 
         c_tau_eq = self._c_tau_eq(shape_km,re_delta_m,m_e,self.src)
 
@@ -632,7 +651,13 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         'Boundary Layer Thickness: Equation 29'
         shape_d = DrelaGilesTurbulentMOD._shape_d(shape_km,m_e)
         delta_d = delta_m*shape_d
-        return delta_m*(3.15 + 1.72/(shape_km-1.)) + delta_d
+
+        delta = delta_m*(3.15 + 1.72/(shape_km-1.)) + delta_d
+        #if not isinstance(delta,np.ndarray):
+        #    delta = np.asarray([delta])
+        #delta = np.array([12.*delta_m if dl >12.*delta_m else dl for dl in delta])
+        #return delta_m*(3.15 + 1.72/(shape_km-1.)) + delta_d
+        return delta
 
     @staticmethod
     def _c_f_dg(shape_km: InputParam, re_delta_m: InputParam, fc:InputParam, src:InputParam) -> npt.NDArray:

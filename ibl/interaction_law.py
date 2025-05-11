@@ -3,8 +3,15 @@ import numpy.typing as npt
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+import os
 
-def interaction_law(s_vec:npt.NDArray, u_inf:float, u_e_input:npt.NDArray, nu_inf:float, debug=False):
+file_name = "Interaction_Law"
+file_name = os.path.dirname(os.path.abspath(__file__))+'\\'+file_name
+print(file_name)
+if not os.path.exists(file_name):
+    os.mkdir(file_name)
+
+def interaction_law(s_vec:npt.NDArray, u_inf:float, u_e_input:npt.NDArray, nu_inf:float, debug=False, smooth_cond=50):
 
     #Function takes in inviscid u_e (as an array of values), and 
     # creates corrections to make the profile less susceptible to Goldstein's Singluarity
@@ -16,17 +23,16 @@ def interaction_law(s_vec:npt.NDArray, u_inf:float, u_e_input:npt.NDArray, nu_in
     ddue_fun = u_e_fun.derivative(2)
 
     if debug:
-        fig, ddue = plt.subplots()
+        fig, ddue = plt.subplots(constrained_layout=True)
         ddue.plot(s_vec,ddue_fun(s_vec),marker='o',markersize=4,color='#BD8B13')
-        ddue.set_ylabel(r'$\frac{d^2u_e}{d\xi^2}$')
-        ddue.set_xlabel(r'$\xi$')
-        ddue.set_title('Debug Plot, interaction_law.py')
+        ddue.set_ylabel(r'$\frac{d^2u_e}{d\xi^2}$, Debug Plot, interaction_law.py [m/$s^2$]')
+        ddue.set_xlabel(r'$s$ [m]')
         ddue.set_ylim([-200,200])
 
     ramploc = -1
     te_u_e_scal = .99
     for i, s_val in enumerate(s_vec):
-        if abs(ddue_fun(s_vec[int(-1*(i+1))]))<=50 and int(-1*(i+1)) >= -10 and u_e[int(-1*(i+1))] > te_u_e_scal*u_inf and due_fun(s_vec[int(-1*(i))])<0: #find a 'smooth' area
+        if abs(ddue_fun(s_vec[int(-1*(i+1))]))<=smooth_cond and int(-1*(i+1)) >= -10 and u_e[int(-1*(i+1))] > te_u_e_scal*u_inf and due_fun(s_vec[int(-1*(i))])<0: #find a 'smooth' area
         #if int(-1*(i+1)) <= -5 and u_e[int(-1*(i+1))] > u_inf:
             ramploc = int(-1*(i+1))
             break
@@ -87,13 +93,15 @@ def interaction_law(s_vec:npt.NDArray, u_inf:float, u_e_input:npt.NDArray, nu_in
     #total_ue_vec = np.concatenate((u_e,wake_approx_ue))
     #Plot for debugging
     if debug:
-        fig, u_e_total = plt.subplots()
-        u_e_total.plot(total_s_vec,total_ue_vec,marker='o',markersize=4,color='#154734')
-        u_e_total.plot([s_vec[ramploc],s_vec[ramploc]],[min(u_e),max(u_e)],linestyle='--',color='black')
-        u_e_total.plot([s_vec[-1],s_vec[-1]],[min(u_e),max(u_e)],linestyle='--',color='black')
-        u_e_total.set_xlabel(r'$\xi$')
-        u_e_total.set_ylabel(r'$u_e$')
-        u_e_total.set_title('Debug Plot, interaction_law.py')
+        fig, u_e_total = plt.subplots(constrained_layout=True)
+        u_e_total.plot(s_vec,u_e_input,color='#154734',linestyle='--',label='Input Profile',linewidth=4.)
+        u_e_total.plot(total_s_vec,total_ue_vec,color='#154734',label='Full Profile')
+        u_e_total.plot([s_vec[ramploc],s_vec[ramploc]],[min(u_e),max(u_e)],linestyle=':',color='black')
+        u_e_total.plot([s_vec[-1],s_vec[-1]],[min(u_e),max(u_e)],linestyle=':',color='black')
+        u_e_total.set_xlabel(r's [m]')
+        u_e_total.set_ylabel(r'$u_e$ [m/s]')
+        u_e_total.legend(ncol=2,borderaxespad=-5.5)
+        fig.savefig(file_name+'\\'+'u_e_wake.png')
 
     #total_delta_d = np.concatenate((delta_d_turb_fp,delta_d_wake))
 
@@ -115,36 +123,28 @@ def interaction_law(s_vec:npt.NDArray, u_inf:float, u_e_input:npt.NDArray, nu_in
 
     #Plot for debugging
     if debug:
-        fig, d_vec_plot = plt.subplots()
+        fig, d_vec_plot = plt.subplots(constrained_layout=True)
         d_vec_plot.plot(total_s_vec,d_vec,marker='o',markersize=4,color='#3A913F')
         d_vec_plot.plot([s_vec[-1],s_vec[-1]],[min(d_vec),max(d_vec)],linestyle='--',color='black') #The dip at TE from the fact that vel is forced at very last value
-        d_vec_plot.set_xlabel(r'$\xi$')
-        d_vec_plot.set_ylabel(r'$u_e\delta^*$')
-        d_vec_plot.set_title('Debug Plot, interaction_law.py')
+        d_vec_plot.set_xlabel(r's [m]')
+        d_vec_plot.set_ylabel(r'$u_e\delta^*$ [/s], Debug Plot, interaction_law.py')
 
     c_mat = c_maker_func(total_s_vec)
     vel_corr = c_mat @ d_vec  
-    #Every column value of c_mat and d_vec are multiplied to eachother, sum of that is for the specific row value
-    #not working v 
-    #vel_corr = np.zeros_like(total_s_vec)
-    #for i in range(len(total_s_vec)):
-    #    vel_corr[i] = sum(c_mat[:,i]*d_vec) - 2*c_mat[i,i]*d_vec[i] #eq 5.7.5?
 
-    return vel_corr, d_vec, c_mat, total_s_vec, u_e
+    return vel_corr, u_e
 
 
 def c_maker_func(total_s_vec):
     c_mat = np.zeros([len(total_s_vec),len(total_s_vec)]) #The j values may exceed the square dimensions: pg 75
     e_mat = np.zeros([len(total_s_vec),len(total_s_vec)])
     #Creating E matrix
-    #TODO when i = j its sus
     for i in range(0,len(total_s_vec)): #rows
         for j in range(0,len(total_s_vec)): #columns
             if j == 0:
                 e_mat[i,j] = 0
             elif j == i:
                 if i+1 == len(total_s_vec): #double check this portion of logic
-                    #e_mat[i,j] = 0 #this appears to be a temporary fix for when i goes out of index during the loop
                     temp = (0 - total_s_vec[i])/(0 - total_s_vec[i-1])
                     temp2 = np.log(abs((total_s_vec[i] - total_s_vec[i-1])/(total_s_vec[i] - 0)))
                     e_mat[i,j] = (temp*temp2 + 2.)/(total_s_vec[i] - total_s_vec[i-1])

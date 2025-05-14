@@ -20,14 +20,14 @@ from ibl.typing import InputParam
 
 from scipy.optimize import minimize
 
-#global shape_k_inverse_hi_flag
-#shape_k_inverse_hi_flag = False
 #TODO replace equation number with my thesis equation numbers. One day.
 class DrelaGilesLaminarMOD(IBLMethod):
     """
-    Models a laminar bondary layer using the Drela-Giles model (1986).
-    References to equation numbers come from Viscous-inviscid analysis of transonic and low Reynolds number airfoils 
-    by M. Drela and M. Giles (1986)
+    Models a laminar bondary layer using the Drela-Giles model: 
+
+    original relations from 1986 and modern relations from XFOIL.
+
+    References to equation numbers come from the paper Enhacement of a Python Integral Boundary Layer Method
 
     Solves the system of ODEs from Drela Giles method when provided the edge
     velocity profile and other configuration information. This method employs the laminar closure functions.
@@ -59,21 +59,13 @@ class DrelaGilesLaminarMOD(IBLMethod):
         self.xvec = np.array([])
 
         self.n_tilde_init = 0
+        #Switch between the original and modern relations
         self.src = src
 
         self.count = 0
         self.firstchk = 0
         self.switch_loc = 0
         self.flag = 0
-        #self.u_e_flag = 0
-        #self.u_inf = u_inf
-
-        #A pre-declared list of shape_km and shape_k relations to quicken guesses
-        #self.shape_km_bank_lo = np.arange(0.1, 4.1, 0.1)
-        #self.shape_k_bank_lo = DrelaGilesLaminarMOD._shape_k(self.shape_km_bank_lo)
-
-        #self.shape_km_bank_hi = np.arange(3.999,7.401,0.001) #Slight overlap
-        #self.shape_k_bank_hi = DrelaGilesLaminarMOD._shape_k(self.shape_km_bank_hi)
 
         self.set_separation_event(self.u_e,self.du_e,cf_crit,self.t_air,self.R_air,self.gamma)
 
@@ -156,16 +148,6 @@ class DrelaGilesLaminarMOD(IBLMethod):
         """
         if self._solution is None:
             raise ValueError("No valid solution.")
-        #global shape_k_inverse_hi_flag
-        #shape_k_inverse_hi_flag = False
-        #delta_m = self._solution(x)[0]
-        #u_e = self.u_e(x)
-        #du_e_dx = self.du_e(x)
-        #m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
-        #delta_k = self._solution(x)[1]
-        #shape_k = delta_k/delta_m
-        #shape_km = self._shape_k_inv_combined(shape_k,self.shape_km_bank_lo,self.shape_k_bank_lo,self.shape_km_bank_hi,self.shape_k_bank_hi,du_e_dx)
-        #shape_d = self._shape_d(shape_km,m_e)
         return self._solution(x)[1]
 
     @override
@@ -233,16 +215,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
         """
         if self._solution is None:
             raise ValueError("No valid solution.")
-        #global shape_k_inverse_hi_flag
-        #shape_k_inverse_hi_flag = False
-        #u_e = self.u_e(x)
-        #du_e_dx = self.du_e(x)
-        #m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
-        #delta_k = self._solution(x)[1]
         delta_m = self._solution(x)[0]
-        #shape_k = delta_k/delta_m
-        #shape_km = self._shape_k_inv_combined(shape_k,self.shape_km_bank_lo,self.shape_k_bank_lo,self.shape_km_bank_hi,self.shape_k_bank_hi,du_e_dx)
-        #shape_d = self._shape_d(shape_km,m_e)
         delta_d = self._solution(x)[1]
         shape_d = delta_d/delta_m
         return shape_d
@@ -292,20 +265,6 @@ class DrelaGilesLaminarMOD(IBLMethod):
         """
         if self._solution is None:
             raise ValueError("No valid solution.")
-        #global shape_k_inverse_hi_flag
-        #shape_k_inverse_hi_flag = False
-        #delta_m = self._solution(x)[0]
-        #u_e = self.u_e(x)
-        #u_e[np.abs(u_e) < 0.001] = 0.001
-        #m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
-        #delta_k = self._solution(x)[1]
-        #shape_k = delta_k/delta_m
-        #du_e_dx = self.du_e(x)
-        #shape_km = self._shape_k_inv_combined(shape_k,self.shape_km_bank_lo,self.shape_k_bank_lo,self.shape_km_bank_hi,self.shape_k_bank_hi,du_e_dx)
-        #shape_d = self._shape_d(shape_km,m_e)
-        #re_delta_m = u_e*delta_m/self._nu
-        #m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
-        #shape_km = self._shape_km(shape_d,m_e)
         u_e = self.u_e(x)
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         shape_d = self.shape_d(x)
@@ -335,20 +294,6 @@ class DrelaGilesLaminarMOD(IBLMethod):
         """
         if self._solution is None:
             raise ValueError("No valid solution.")
-        #global shape_k_inverse_hi_flag
-        #shape_k_inverse_hi_flag = False
-        #delta_m = self._solution(x)[0]
-        #u_e = self.u_e(x)
-        #u_e[np.abs(u_e) < 0.001] = 0.001
-        #du_e_dx = self.du_e(x)
-        #m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
-        #delta_k = self._solution(x)[1]
-        #shape_k = delta_k/delta_m
-        #shape_km = self._shape_k_inv_combined(shape_k,self.shape_km_bank_lo,self.shape_k_bank_lo,self.shape_km_bank_hi,self.shape_k_bank_hi,du_e_dx)
-        #shape_d = self._shape_d(shape_km,m_e)
-        #re_delta_m = u_e*delta_m/self._nu
-        #m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
-        #shape_km = self._shape_km(shape_d,m_e)
 
         u_e = self.u_e(x)
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
@@ -359,7 +304,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
         re_delta_m = u_e*delta_m/self._nu
 
         c_D = self._c_D(shape_km,shape_k,re_delta_m,self.src) # eq 18
-        return .5*c_D*rho*u_e**3
+        return c_D*rho*u_e**3
     
     def n_tilde(self, x: InputParam) -> npt.NDArray:
         """
@@ -391,12 +336,6 @@ class DrelaGilesLaminarMOD(IBLMethod):
         """
 
         n_tilde_init = self.n_tilde_init
-        #self.u_e_flag = u_e_ic
-        #m_e = self._mach(self._ic._u_e,self.t_air,self.R_air,self.gamma)
-        #shape_d = self._ic.delta_d()/self._ic.delta_m()
-        #shape_km = self._shape_km(shape_d,m_e)
-        #shape_k_init = self._shape_k(shape_km)
-        #delta_k_init = shape_k_init*self._ic.delta_m()
         return np.array([self._ic.delta_m(),self._ic.delta_d(),n_tilde_init]), 1e-8, 1e-11
         #return np.array([self._ic.delta_m(),self._ic.delta_d(),n_tilde_init]), 1e-6, 1e-6
 
@@ -427,10 +366,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
         #delta_k = f[1]
         delta_d = f[1]
         #shape_k = delta_k/delta_m
-        m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
-        #shape_km = self._shape_k_inv_combined(shape_k,self.shape_km_bank_lo,self.shape_k_bank_lo,
-        #                                      self.shape_km_bank_hi,self.shape_k_bank_hi,du_e_dx)
-        
+        m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)        
         shape_d = delta_d/delta_m
         shape_km = self._shape_km(shape_d,m_e)
 
@@ -486,13 +422,13 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _shape_km(shape_d:InputParam,m_e:InputParam) -> InputParam:
-        "Kinematic Shape Factor: Equation 15"
+        "Kinematic Shape Factor: Equation 1.29"
         temp = shape_d - .29*m_e**2
         return temp/(1.+.113*m_e**2)
 
     @staticmethod
     def _dme_dx(du_e: InputParam,t_air: InputParam,R_air: InputParam,gamma: InputParam) -> InputParam:
-        "Streamwise Derivative of Local Edge Mach Number"
+        "Streamwise Derivative of Local Edge Mach Number: Equation 2.6"
         dme_dx = 1/np.sqrt(gamma*R_air*t_air)*du_e
         return dme_dx
 
@@ -529,7 +465,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _n_tild_ramp_cust(ratio:InputParam, src:InputParam) -> InputParam:
-        'Logistic Function for n_tilde values to replicate cubic ramp of XFOIL source code'
+        'Logistic Function for n_tilde values to replicate cubic ramp of XFOIL source code, Equation 2.11'
         if not src:
             k = 20 #OLD, KEEP
         else:
@@ -547,7 +483,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
     
     @staticmethod
     def _shape_den(shape_km: InputParam, m_e: InputParam) -> InputParam:  # eq 19
-        'Density Shape Factor: Equation 19'
+        'Density Shape Factor: Equation 1.28'
         return (0.064/(shape_km - 0.8) + 0.251)*m_e**2
     
     @staticmethod
@@ -557,7 +493,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _crit_re_m_log(shape_km:InputParam) -> InputParam:
-        'Critical Momentum Thickness Reynolds Number, Equation 36'
+        'Critical Momentum Thickness Reynolds Number, Equation 1.32'
         temp1 = 1.415/(shape_km-1.) -.489
         temp2 = temp1*np.tanh(20./(shape_km-1.) -12.9)
         temp  = temp2 + 3.295/(shape_km-1.)+.44
@@ -572,23 +508,23 @@ class DrelaGilesLaminarMOD(IBLMethod):
         
     @staticmethod
     def _d_ntild_dre_m(shape_km: InputParam) -> InputParam:
-        'n_tilde Derivative with respect to Momentum Thickness Reynolds Number'
+        'n_tilde Derivative with respect to Momentum Thickness Reynolds Number: Equation 1.31'
         return 0.01 * np.sqrt((2.4*shape_km - 3.7 + 2.5*np.tanh(1.5*shape_km - 4.65))**2 + 0.25)
     
     @staticmethod
     def _lfunc(shape_km: InputParam) -> InputParam:
-        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 39'
+        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 1.34b'
         return (6.54*shape_km - 14.07)/shape_km**2
 
     @staticmethod
     def _mfunc(shape_km: InputParam) -> InputParam:
-        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 40'
+        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 1.34a'
         lfunc = DrelaGilesLaminarMOD._lfunc(shape_km)
         return (0.058*((shape_km - 4)**2)/(shape_km - 1) - 0.068)*(1/lfunc)
     
     @staticmethod
     def _c_f_dg(shape_km: InputParam, re_delta_m: InputParam, src: InputParam) -> npt.NDArray:
-        'Laminar Skin Friction Coefficient: Equation 17'
+        'Laminar Skin Friction Coefficient: Equation A.3, Equation B.3'
 
         if not isinstance(shape_km,np.ndarray):
             shape_km = np.array([shape_km])
@@ -643,19 +579,9 @@ class DrelaGilesLaminarMOD(IBLMethod):
         
         return result
 
-        #def lam_fric_low(shape_km: InputParam) -> InputParam:
-        #    temp =  (5.5-shape_km)**3 /(shape_km+1.)
-        #    return (1/re_delta_m)*(.0727*temp -.07)
-        #
-        #def lam_fric_high(shape_km: InputParam) -> InputParam:
-        #    temp = 1. - 1./(shape_km-4.5)
-        #    return (1/re_delta_m)*(.015*temp**2 -.07)
-        #
-        #return np.piecewise(shape_km, [shape_km <= 5.5, shape_km > 5.5], [lam_fric_low, lam_fric_high]) #not sure what's wrong
-
     @staticmethod
     def _ddelta_m_dx(delta_m: InputParam, shape_km: InputParam, m_e: InputParam, u_e: InputParam, du_e_dx: InputParam, c_f: InputParam) -> InputParam:
-        'Streamwise Derivative of Momentum Thickness: Equation 10'
+        'Streamwise Derivative of Momentum Thickness: Equation 1.25'
         shape_d = DrelaGilesLaminarMOD._shape_d(shape_km, m_e)
         u_e = np.asarray(u_e) #Avoids divide by zero errors
         u_e[abs(u_e) < 1e-9] = 1e-9
@@ -663,100 +589,8 @@ class DrelaGilesLaminarMOD(IBLMethod):
     
     @staticmethod
     def _shape_d(shape_km: InputParam, m_e: InputParam) -> InputParam:
-        'Displacement Shape Factor as a function of Kinematic Shape Factor and Local Edge Mach Number: Equation 15'
+        'Displacement Shape Factor as a function of Kinematic Shape Factor and Local Edge Mach Number: Equation 1.29 Rearranged'
         return shape_km*(1.+0.113*m_e**2) + 0.29*m_e**2
-    
-    #@staticmethod
-    #def _shape_k_inverse_lo(shape_k: InputParam, shape_km_bank: InputParam, shape_k_bank: InputParam) -> npt.NDArray:
-    #    'The Inverse Formulation of Equationo 16, for Kinematic Shape Factors between 0 and 4'
-    #
-    #    if not isinstance(shape_k,np.ndarray):
-    #        shape_k = np.array([shape_k])
-    #    shape_km = np.zeros_like(shape_k)
-    #
-    #    def e16_lo(shape_km, shape_k):
-    #        # Eq 16, low side
-    #        temp = 16./shape_km
-    #        model = 0.907 + 0.076 * (temp + shape_km)
-    #        return (shape_k - model)**2
-    #
-    #    for idx,h_k in enumerate(shape_k):
-    #        bounds = [(0., 4.)]
-    #        ig_idx = np.argmin(abs(shape_k_bank - h_k))
-    #        ig = [shape_km_bank[ig_idx]]
-    #        result = minimize(e16_lo, ig, args=(h_k,), bounds=bounds, method='L-BFGS-B')
-    #        if result.success:
-    #            shape_km[idx] = result.x[0]
-    #        else:
-    #            shape_km[idx] = ig[0]
-    #    return shape_km
-    #
-    #@staticmethod
-    #def _shape_k_inverse_hi(shape_k: InputParam, shape_km_bank: InputParam, shape_k_bank: InputParam) -> npt.NDArray:
-    #    'The Inverse Formulation of Equationo 16, for Kinematic Shape Factors 4 and beyond'
-    #
-    #    if not isinstance(shape_k,np.ndarray):
-    #        shape_k = np.array([shape_k])
-    #    shape_km = np.zeros_like(shape_k)
-    #
-    #    #def e16_hi(shape_km, shape_k):
-    #    #    # Eq 16, high side
-    #    #        temp = 16./shape_km
-    #    #        model = 1.195 + 0.040 * (temp + shape_km)
-    #    #        return (shape_k - model)**2
-    #
-    #    for idx,h_k in enumerate(shape_k):
-    #        bounds = [(3.999, 7.4)]
-    #        ig_idx = np.argmin(abs(shape_k_bank - h_k))
-    #        ig = [shape_km_bank[ig_idx]]
-    #        #result = minimize(e16_hi, ig, args=(h_k,), bounds=bounds, method='L-BFGS-B')
-    #        #if result.success:
-    #            #shape_km[idx] = result.x[0]
-    #        #else:
-    #            #shape_km[idx] = ig[0]
-    #        shape_km[idx] = ig[0]
-    #
-    #    return shape_km
-
-    #@staticmethod
-    #def _shape_k_inv_combined(shape_k: InputParam, shape_km_bank_lo: InputParam, shape_k_bank_lo: InputParam, 
-    #                          shape_km_bank_hi: InputParam, shape_k_bank_hi: InputParam, du_e_dx: InputParam,
-    #                          debugprint = False) -> npt.NDArray:
-    #    'The Combined Inverse Functions of Equation 16'
-    #    shape_k = np.asarray(shape_k)
-    #    if shape_k.shape ==():
-    #        shape_k = shape_k.reshape(-1)
-    #
-    #    du_e_dx = np.asarray(du_e_dx)
-    #    if du_e_dx.shape ==():
-    #        du_e_dx = du_e_dx.reshape(-1)
-    #
-    #    du_e_dx = np.asarray(du_e_dx)
-    #
-    #    shape_km = np.zeros_like(shape_k)
-    #    global shape_k_inverse_hi_flag
-    #
-    #    for idx, (h_k, due) in enumerate(zip(shape_k, du_e_dx)):
-    #        if not shape_k_inverse_hi_flag:
-    #            shape_km[idx] = DrelaGilesLaminarMOD._shape_k_inverse_lo(h_k,shape_km_bank_lo,shape_k_bank_lo)
-    #            if abs(h_k-DrelaGilesLaminarMOD._shape_k(4.13861)) <= .0012 and due < 0.: #1.515 is shape_k eq transition point, negative velocity derivative implies that shape_km will continue to increase
-    #            #if shape_km[idx] > 4. and due < 0.:
-    #                if debugprint:
-    #                    print("HI FLAG SET")
-    #                shape_km[idx] = DrelaGilesLaminarMOD._shape_k_inverse_hi(h_k,shape_km_bank_hi,shape_k_bank_hi)
-    #                #global shape_k_inverse_hi_flag
-    #                shape_k_inverse_hi_flag = True
-    #        else:
-    #            if debugprint:
-    #                print("HI FLAG")
-    #            shape_km[idx] = DrelaGilesLaminarMOD._shape_k_inverse_hi(h_k,shape_km_bank_hi,shape_k_bank_hi)
-    #            if abs(h_k-DrelaGilesLaminarMOD._shape_k(4.13861)) <= 1.e-5 and due > 0.:
-    #                #global shape_k_inverse_hi_flag
-    #                shape_k_inverse_hi_flag = False
-    #    if debugprint:
-    #        print('~~~~~~~')
-    #        print(shape_km)
-    #    return shape_km
 
     @staticmethod
     def _dshape_k_dre_m() -> InputParam:
@@ -765,7 +599,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _shape_k(shape_km: InputParam,src: InputParam) -> npt.NDArray:
-        'Kinetic Energy Shape Factor: Equation 16'
+        'Kinetic Energy Shape Factor: Equation A.1, Equation B.1'
 
         shape_km = np.asarray(shape_km)
 
@@ -795,7 +629,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _c_D(shape_km: InputParam, shape_k: InputParam, re_delta_m: InputParam, src: InputParam) -> npt.NDArray:
-        'Dissipation Coefficient: Equation 18'
+        'Dissipation Coefficient: Equation A.4, Equation B.4'
 
         shape_km = np.asarray(shape_km)
         shape_k = np.asarray(shape_k)
@@ -831,7 +665,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _dshape_k_dshape_km(shape_km: InputParam, src: InputParam) -> npt.NDArray:
-        'Partial Derivative of Kinetic Energy Shape Factor with respect to Kinematic Shape Factor'
+        'Partial Derivative of Kinetic Energy Shape Factor with respect to Kinematic Shape Factor: Equation A.2, Equation B.2'
         shape_km = np.asarray(shape_km)
 
         shape_km[shape_km > 1.84e19] = 1.84e19
@@ -859,7 +693,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
     @staticmethod
     def _dshape_k_dx(delta_m: InputParam, shape_km: InputParam, u_e: InputParam, 
                      du_e: InputParam, m_e: InputParam, re_delta_m: InputParam, c_f: InputParam, src: InputParam) -> InputParam:
-        'Streamwise Derivative of Kinetic Energy Shape Factor: Equation 11'
+        'Streamwise Derivative of Kinetic Energy Shape Factor: Equation 1.26'
         shape_den = DrelaGilesLaminarMOD._shape_den(shape_km, m_e)
         shape_k = DrelaGilesLaminarMOD._shape_k(shape_km,src)
         c_D = DrelaGilesLaminarMOD._c_D(shape_k=shape_k,shape_km=shape_km,re_delta_m=re_delta_m,src=src)
@@ -915,10 +749,6 @@ class _DrelaGilesSeparationEvent(TermEvent):
         self._R_air = R_air
         self._gamma = gamma
         self._src = src
-        #self._shape_k_bank_hi = shape_k_bank_hi
-        #self._shape_k_bank_lo = shape_k_bank_lo
-        #self._shape_km_bank_hi = shape_km_bank_hi
-        #self._shape_km_bank_lo = shape_km_bank_lo
 
     @override
     def _call_impl(self, x: float, f: npt.NDArray) -> float:
@@ -951,19 +781,8 @@ class _DrelaGilesSeparationEvent(TermEvent):
         u_e = self._u_e(x)
         m_e = DrelaGilesLaminarMOD._mach(u_e,self._t_air,self._R_air,self._gamma)
         shape_km = DrelaGilesLaminarMOD._shape_km(shape_d,m_e)
-        #du_e = self._du_e(x)
-        #shape_km = DrelaGilesLaminarMOD._shape_k_inv_combined(shape_k=shape_k,shape_k_bank_hi=self._shape_k_bank_hi,
-        #                                                      shape_k_bank_lo=self._shape_k_bank_lo,shape_km_bank_hi=self._shape_km_bank_hi,
-        #                                                      shape_km_bank_lo=self._shape_km_bank_lo,du_e_dx=du_e,debugprint=True)
-        #TODO having to use the low version only is sus?
-        #shape_km = DrelaGilesLaminarMOD._shape_k_inverse_lo(shape_k,self._shape_km_bank_lo,self._shape_k_bank_lo)
         re_delta_m = u_e*delta_m/self._nu
         current_cf = DrelaGilesLaminarMOD._c_f_dg(shape_km,re_delta_m,self._src)
-        #print(shape_km)
-        #print(float(current_cf - self._cf_crit))
-        #temp = 0.01977*(7.4-shape_km)**2/(shape_km-1.) - 0.067
-        #print(temp)
-        #return float(temp)
         return float(current_cf - self._cf_crit)
 
     @override

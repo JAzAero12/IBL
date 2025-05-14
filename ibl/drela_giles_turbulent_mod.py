@@ -356,7 +356,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
             c_tau = self._solution(x)[2]
         c_D = self._c_D(c_f=c_f,u_s=u_s,c_tau=c_tau,src=self.src) # eq 18
 
-        return .5*c_D*rho*u_e**3
+        return c_D*rho*u_e**3
     
     def c_tau(self, x: InputParam) -> npt.NDArray:
         """

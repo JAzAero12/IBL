@@ -93,13 +93,14 @@ def interaction_law(s_vec:npt.NDArray, u_inf:float, u_e_input:npt.NDArray, nu_in
     #total_ue_vec = np.concatenate((u_e,wake_approx_ue))
     #Plot for debugging
     if debug:
-        fig, u_e_total = plt.subplots(constrained_layout=True)
-        u_e_total.plot(s_vec,u_e_input,color='#154734',linestyle='--',label='Input Profile',linewidth=4.)
-        u_e_total.plot(total_s_vec,total_ue_vec,color='#154734',label='Full Profile')
+        fig, u_e_total = plt.subplots(constrained_layout=True,figsize=[10,6])
+        u_e_total.plot(s_vec,u_e_input,color='#9FC9CD',linestyle='--',label='Input Profile',linewidth=4.)
+        u_e_total.plot(total_s_vec,total_ue_vec,color='#9FC9CD',label='Full Profile')
         u_e_total.plot([s_vec[ramploc],s_vec[ramploc]],[min(u_e),max(u_e)],linestyle=':',color='black')
         u_e_total.plot([s_vec[-1],s_vec[-1]],[min(u_e),max(u_e)],linestyle=':',color='black')
         u_e_total.set_xlabel(r's [m]')
         u_e_total.set_ylabel(r'$u_e$ [m/s]')
+        u_e_total.set_ylim([0.8*u_e_input[-1],max(u_e)+1])
         u_e_total.legend(ncol=2,borderaxespad=-5.5)
         fig.savefig(file_name+'\\'+'u_e_wake.png')
 

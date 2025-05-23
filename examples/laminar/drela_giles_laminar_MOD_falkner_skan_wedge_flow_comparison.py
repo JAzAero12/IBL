@@ -26,7 +26,11 @@ plt.rcParams['legend.loc'] = 'lower center'
 plt.rcParams['legend.borderaxespad'] = -10
 plt.rcParams["axes.grid"] = True
 plt.rcParams["lines.linewidth"] = 3.
-
+plt.rcParams["mathtext.fontset"] = "custom"
+plt.rcParams["mathtext.rm"] = "Times New Roman"
+plt.rcParams["mathtext.it"] = "Times New Roman:italic"
+plt.rcParams["mathtext.bf"] = "Times New Roman:bold"
+plt.rcParams["mathtext.default"] = "rm"
 file_name = "Falkner_Skan_Comparison"
 file_name = os.path.dirname(os.path.abspath(__file__))+'\\'+file_name
 print(file_name)
@@ -68,12 +72,13 @@ def compare_stagnation_solution() -> None:
     fig = plt.figure()
     #fig.set_figwidth(10)
     #fig.set_figheight(15)
-    gs = GridSpec(5, 2, figure=fig)
+    #gs = GridSpec(5, 2, figure=fig)
+    gs = GridSpec(4, 2, figure=fig)
     axis_delta_d = [fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])]
     axis_delta_m = [fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])]
     axis_shape_d = [fig.add_subplot(gs[2, 0]), fig.add_subplot(gs[2, 1])]
     axis_c_f = [fig.add_subplot(gs[3, 0]), fig.add_subplot(gs[3, 1])]
-    axis_v_e = [fig.add_subplot(gs[4, 0]), fig.add_subplot(gs[4, 1])]
+    #axis_v_e = [fig.add_subplot(gs[4, 0]), fig.add_subplot(gs[4, 1])]
 
     # extract the Falkner-Skan (exact) solution
     fs = FalknerSkan(beta=0.5, u_ref=u_inf, nu_ref=nu_inf)
@@ -90,10 +95,10 @@ def compare_stagnation_solution() -> None:
     _ = axis_delta_m[0].plot(x/c, delta_m_exact/c, color=exact_color,linewidth=4.,linestyle='--')
     _ = axis_shape_d[0].plot(x/c, shape_d_exact, color=exact_color,linewidth=4.,linestyle='--')
     _ = axis_c_f[0].plot(x/c, c_f_exact, color=exact_color,linewidth=4.,linestyle='--')
-    _ = axis_v_e[0].plot(x/c, v_e_exact/u_inf, color=exact_color,linewidth=4.,linestyle='--')
+    #_ = axis_v_e[0].plot(x/c, v_e_exact/u_inf, color=exact_color,linewidth=4.,linestyle='--')
 
 
-    labels = ["Falkner-Skan", "D-G, Old", "D-G, Modern"]
+    labels = ["Falkner-Skan", "D-G, Orig", "D-G, Modern"]
     model = DrelaGilesLaminarMOD(nu=nu_inf,U_e=u_e_fun,dU_edx=du_e_fun,ic = ManualCondition(delta_d=delta_d_exact[0], delta_m=delta_m_exact[0], delta_k=delta_k_exact[0]),show_prog=False,src=False) #src = True fits better
     tmp = 0
     rtn = model.solve(x0=x[tmp], x_end=x[-1])
@@ -131,31 +136,31 @@ def compare_stagnation_solution() -> None:
                                               color=color)[0])
     _ = axis_delta_d[1].plot(x[tmp:]/c, np.abs(1-delta_d/delta_d_exact[tmp:]),
                              color=color)
-    _ = axis_delta_m[0].plot(x[tmp:]/c, delta_m/c, color='#154734')
+    _ = axis_delta_m[0].plot(x[tmp:]/c, delta_m/c, color='#BB00FF')
     _ = axis_delta_m[1].plot(x[tmp:]/c, np.abs(1-delta_m/delta_m_exact[tmp:]),
-                             color='#154734')
-    _ = axis_shape_d[0].plot(x[tmp:]/c, shape_d, color=color)
+                             color='#BB00FF')
+    _ = axis_shape_d[0].plot(x[tmp:]/c, shape_d, color='#612D00')
     _ = axis_shape_d[1].plot(x[tmp:]/c, np.abs(1-shape_d/shape_d_exact[tmp:]),
-                             color=color)
-    _ = axis_c_f[0].plot(x[tmp:]/c, c_f, color="#F8E08E")
-    _ = axis_c_f[1].plot(x[tmp:]/c, np.abs(1-c_f/c_f_exact[tmp:]), color="#F8E08E")
-    _ = axis_v_e[0].plot(x[tmp:]/c, v_e/u_inf, color=color)
-    _ = axis_v_e[1].plot(x[tmp:]/c, np.abs(1-v_e/v_e_exact[tmp:]), color=color)
+                             color='#612D00')
+    _ = axis_c_f[0].plot(x[tmp:]/c, c_f, color="#818181")
+    _ = axis_c_f[1].plot(x[tmp:]/c, np.abs(1-c_f/c_f_exact[tmp:]), color="#818181")
+    #_ = axis_v_e[0].plot(x[tmp:]/c, v_e/u_inf, color=color)
+    #_ = axis_v_e[1].plot(x[tmp:]/c, np.abs(1-v_e/v_e_exact[tmp:]), color=color)
 
     curve_handles.append(axis_delta_d[0].plot(x[tmp:]/c, delta_d_src/c,
                                               color=color2,linestyle='--')[0])
     _ = axis_delta_d[1].plot(x[tmp:]/c, np.abs(1-delta_d_src/delta_d_exact[tmp:]),
                              color=color2,linestyle='--')
-    _ = axis_delta_m[0].plot(x[tmp:]/c, delta_m_src/c, color='#154734',linestyle='--')
+    _ = axis_delta_m[0].plot(x[tmp:]/c, delta_m_src/c, color='#BB00FF',linestyle='--')
     _ = axis_delta_m[1].plot(x[tmp:]/c, np.abs(1-delta_m_src/delta_m_exact[tmp:]),
-                             color='#154734',linestyle='--')
-    _ = axis_shape_d[0].plot(x[tmp:]/c, shape_d_src, color=color2,linestyle='--')
+                             color='#BB00FF',linestyle='--')
+    _ = axis_shape_d[0].plot(x[tmp:]/c, shape_d_src, color='#612D00',linestyle='--')
     _ = axis_shape_d[1].plot(x[tmp:]/c, np.abs(1-shape_d_src/shape_d_exact[tmp:]),
-                             color=color2,linestyle='--')
-    _ = axis_c_f[0].plot(x[tmp:]/c, c_f_src, color="#F8E08E",linestyle='--')
-    _ = axis_c_f[1].plot(x[tmp:]/c, np.abs(1-c_f_src/c_f_exact[tmp:]), color="#F8E08E",linestyle='--')
-    _ = axis_v_e[0].plot(x[tmp:]/c, v_e_src/u_inf, color=color2,linestyle='--')
-    _ = axis_v_e[1].plot(x[tmp:]/c, np.abs(1-v_e_src/v_e_exact[tmp:]), color=color2,linestyle='--')
+                             color='#612D00',linestyle='--')
+    _ = axis_c_f[0].plot(x[tmp:]/c, c_f_src, color="#818181",linestyle='--')
+    _ = axis_c_f[1].plot(x[tmp:]/c, np.abs(1-c_f_src/c_f_exact[tmp:]), color="#818181",linestyle='--')
+    #_ = axis_v_e[0].plot(x[tmp:]/c, v_e_src/u_inf, color=color2,linestyle='--')
+    #_ = axis_v_e[1].plot(x[tmp:]/c, np.abs(1-v_e_src/v_e_exact[tmp:]), color=color2,linestyle='--')
 
     # Displacement thickness in 0,:
     _ = axis_delta_d[0].set_ylim((0, 0.0008))
@@ -201,16 +206,16 @@ def compare_stagnation_solution() -> None:
     axis_c_f[1].grid(True)
 
     # Transpiration velocity in 4,:
-    _ = axis_v_e[0].set_ylim((0, 0.01))
-    _ = axis_v_e[0].set_xlabel(r"$s/c$")
-    _ = axis_v_e[0].set_ylabel(r"$v_e/u_{inf}$")
-    axis_v_e[0].grid(True)
+    #_ = axis_v_e[0].set_ylim((0, 0.01))
+    #_ = axis_v_e[0].set_xlabel(r"$s/c$")
+    #_ = axis_v_e[0].set_ylabel(r"$v_e/u_{\infty}$")
+    #axis_v_e[0].grid(True)
 
-    _ = axis_v_e[1].set_xlabel(r"$s/c$")
-    _ = axis_v_e[1].set_ylabel("Relative Error")
-    _ = axis_v_e[1].set_ylim((1e-4,1))
-    axis_v_e[1].set_yscale('log')
-    axis_v_e[1].grid(True)
+    #_ = axis_v_e[1].set_xlabel(r"$s/c$")
+    #_ = axis_v_e[1].set_ylabel("Relative Error")
+    #_ = axis_v_e[1].set_ylim((1e-4,1))
+    #axis_v_e[1].set_yscale('log')
+    #axis_v_e[1].grid(True)
 
     _ = fig.subplots_adjust(left=0.15, wspace=0.5, hspace=.5, top=.95)
     _ = fig.legend(handles=curve_handles, labels=labels, loc="upper center",

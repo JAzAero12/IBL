@@ -8,12 +8,28 @@ from ibl.drela_giles_laminar_mod import DrelaGilesLaminarMOD
 from ibl.initial_condition import ManualCondition
 
 
+import os
+
+# NACA 0009 Re = 10000
 plt.rcParams['font.family'] = 'Times New Roman'
-plt.rcParams['font.size'] = 12
-plt.rcParams['figure.figsize'] = [10, 4]
+plt.rcParams['font.size'] = 24
+plt.rcParams['figure.figsize'] = [13, 8]
 plt.rcParams['legend.loc'] = 'lower center'
-plt.rcParams['legend.borderaxespad'] = -6
+plt.rcParams['legend.borderaxespad'] = -8.6
 plt.rcParams["axes.grid"] = True
+plt.rcParams["lines.linewidth"] = 3.
+plt.rcParams["mathtext.fontset"] = "custom"
+plt.rcParams["mathtext.rm"] = "Times New Roman"
+plt.rcParams["mathtext.it"] = "Times New Roman:italic"
+plt.rcParams["mathtext.bf"] = "Times New Roman:bold"
+plt.rcParams["mathtext.default"] = "rm"
+#print(os.path.dirname(os.path.abspath(__file__)))
+
+file_name = "NACA0009_Re1E4_VISC"
+file_name = os.path.dirname(os.path.abspath(__file__))+'\\'+file_name
+print(file_name)
+if not os.path.exists(file_name):
+    os.mkdir(file_name)
 
 # NACA 0009 Re = 1e4
 # Case similar to paper by Ozdemir
@@ -53,8 +69,9 @@ u_e_visc_c = np.array([0.10642,0.31831,0.50904,0.66446,0.78422,0.87441,0.94229,
 u_e_visc = U_inf*u_e_visc_c
 
 fig, velcurve = plt.subplots()
-velcurve.plot(s_ref,u_e_visc,'#154734')
-velcurve.set_title('u_e')
+velcurve.plot(s_ref,u_e_visc,'#154734',marker='o',markersize=4)
+velcurve.set_xlabel('s [m]')
+velcurve.set_ylabel(r'$u_e$ [m/s]')
 
 delta_m = np.array([0.0002532,0.0002633,0.0002863,0.0003214,0.0003663,0.0004196,0.0004808,
             0.0005499,0.0006278,0.0007163,0.0008174,0.0009331,0.0010645,0.001209,
@@ -121,6 +138,12 @@ shape_d = np.array([2.2295,2.2364,2.2549,2.2767,2.3019,2.3272,2.3522,
                     3.3608,3.3999,3.4415,3.4856,3.5322,3.5811,3.6313,
                     3.6802,3.7235,3.7487,])
 
+T_air = 288.15
+R_air = 287.
+gamma = 1.4
+mach = u_e_visc/np.sqrt(gamma*R_air*T_air)
+shape_km = (shape_d - .29*mach**2)/(1. + .113*mach**2)
+
 c_f = np.array([0.0301582,0.0859332,0.123239,0.139129,0.1392117,0.130834,0.1188604,
                 0.1059584,0.0933915,0.0816563,0.070957,0.0613659,0.0529711,0.0458617,
                 0.040046,0.0353914,0.0316748,0.0286719,0.0262015,0.0241305,0.0223637,
@@ -147,7 +170,7 @@ c_D = np.array([0.0009225,0.0078992,0.0183515,0.0274751,0.0330763,0.0353744,0.03
                 0.0022998,0.0022599,0.0022214,0.0021845,0.0021492,0.0021157,0.0020843,
                 0.0020563,0.0020334,0.0040912,])
 
-n_tild = np.array([0.,0.,0.,0.,0.,0.,0.,
+n_tilda = np.array([0.,0.,0.,0.,0.,0.,0.,
                     0.,0.,0.,0.,0.,0.,0.,
                     0.,0.,0.,0.,0.,0.,0.,
                     0.,0.,0.,0.,0.,0.,0.,
@@ -160,8 +183,21 @@ n_tild = np.array([0.,0.,0.,0.,0.,0.,0.,
                     0.2864344,0.3216878,0.3580099,0.3954082,0.4338357,0.4730763,0.512416,
                     0.5500006,0.5827707,0.0473897,])
 
+re_delta_m = np.array([0.269,0.838,1.458,2.136,2.873,3.669,4.53,
+                        5.465,6.489,7.625,8.897,10.332,11.936,13.679,
+                        15.495,17.312,19.081,20.782,22.412,23.973,25.473,
+                        26.918,28.313,29.664,30.975,32.251,33.494,34.708,
+                        35.894,37.056,38.195,39.314,40.412,41.493,42.556,
+                        43.604,44.636,45.655,46.66,47.652,48.633,49.602,
+                        50.56,51.509,52.447,53.377,54.297,55.21,56.114,
+                        57.011,57.901,58.785,59.662,60.533,61.398,62.258,
+                        63.113,63.963,64.809,65.65,66.487,67.32,68.149,
+                        68.973,69.794,70.61,71.422,72.229,73.03,73.826,
+                        74.615,75.397,76.171,76.935,77.688,78.424,79.13,
+                        79.776,80.319,80.683])
 
-# Run PyBL (DG La,minar)
+
+# Run PyBL (DG Laminar)
 
 ic = ManualCondition(delta_d=delta_d[0],delta_m=delta_m[0],delta_k=delta_m[0]*shape_k[0])
 
@@ -186,109 +222,120 @@ rtn = TM_testrun.solve(s_ref[0],s_ref[-1])
 print(rtn.message)
 print(rtn.x_end)
 
-#s_ref_pybl = np.linspace(s_ref[0],rtn.x_end,200)
-s_ref_pybl = s_ref
-fig, deld = plt.subplots(constrained_layout=True)
-deld.plot(s_ref,delta_d,label=r'$\delta_d$ XFOIL',marker='o',color='#A4D65E',markersize=4)
-deld.plot(s_ref_pybl,DG_testrun.delta_d(s_ref_pybl),label=r'$\delta_d$ PyBL, Drela-Giles, Laminar',color='#A4D65E',marker='s',markersize=4)
-deld.plot(s_ref_pybl,TM_testrun.delta_d(s_ref_pybl),label=r"$\delta_d$ PyBL, Thwaites'",color='#A4D65E',linestyle='--',marker='v',markersize=4)
-deld.plot(s_ref,delta_m,label=r'$\delta_m$ XFOIL',marker='o',color='#3A913F',markersize=4)
-deld.plot(s_ref_pybl,DG_testrun.delta_m(s_ref_pybl),label=r'$\delta_m$ PyBL, Drela-Giles, Laminar',color='#3A913F',marker='s',markersize=4)
-deld.plot(s_ref_pybl,TM_testrun.delta_m(s_ref_pybl),label=r"$\delta_m$ PyBL, Thwaites'",color='#3A913F',linestyle='--',marker='v',markersize=4)
-deld.plot(s_ref,delta_k,label=r'$\delta_k$ XFOIL',marker='o',color='#F2C75C',markersize=4)
-deld.plot(s_ref_pybl,DG_testrun.delta_k(s_ref_pybl),label=r'$\delta_k$ PyBL, Drela-Giles, Laminar',color='#F2C75C',marker='s',markersize=4)
-deld.legend(ncol=3,borderaxespad=-8.5)
-#deld.set_ylim([0,0.03])
-deld.set_xlim([0,1.])
-deld.set_ylabel('Thicknesses [m]')
-deld.set_xlabel('s [m]')
-#deld.set_title(r'$\delta_d$')
 
-fig, deld = plt.subplots(constrained_layout=True)
-deld.plot(s_ref_pybl,abs(DG_testrun.delta_d(s_ref_pybl)-delta_d)/delta_d,label=r'$\delta_d$ PyBL, Drela-Giles, Laminar',color='#A4D65E',marker='s',markersize=4)
-deld.plot(s_ref_pybl,abs(TM_testrun.delta_d(s_ref_pybl)-delta_d)/delta_d,label=r"$\delta_d$ PyBL, Thwaites'",color='#A4D65E',linestyle='--',marker='v',markersize=4)
-deld.plot(s_ref_pybl,abs(DG_testrun.delta_m(s_ref_pybl)-delta_m)/delta_m,label=r'$\delta_m$ PyBL, Drela-Giles, Laminar',color='#3A913F',marker='s',markersize=4)
-deld.plot(s_ref_pybl,abs(TM_testrun.delta_m(s_ref_pybl)-delta_m)/delta_m,label=r"$\delta_m$ PyBL, Thwaites'",color='#3A913F',linestyle='--',marker='v',markersize=4)
-deld.plot(s_ref_pybl,abs(DG_testrun.delta_k(s_ref_pybl)-delta_k)/delta_k,label=r'$\delta_k$ PyBL, Drela-Giles, Laminar',color='#F2C75C',marker='s',markersize=4)
-deld.legend(ncol=3,borderaxespad=-7.5)
-#deld.set_ylim([0,0.03])
-deld.set_yscale('log')
-deld.set_xlim([0,1.])
-deld.set_ylabel('Relative Difference')
-deld.set_xlabel('s [m]')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_d,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,DG_testrun.delta_d(s_ref),label=r'D-G',color='#A4D65E')
+dels.plot(s_ref,TM_testrun.delta_d(s_ref),label=r"Thwaites",color='#A4D65E',linestyle=':')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(DG_testrun.delta_d(s_ref)-delta_d)/delta_d,label=r'D-G',color='#A4D65E')
+dels_err.plot(s_ref,np.abs(TM_testrun.delta_d(s_ref)-delta_d)/delta_d,label=r"Thwaites",color='#A4D65E',linestyle=':')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_d$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_d_visc.png')
 
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_m,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,DG_testrun.delta_m(s_ref),label=r'D-G',color='#BB00FF')
+dels.plot(s_ref,TM_testrun.delta_m(s_ref),label=r"Thwaites",color='#BB00FF',linestyle=':')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(DG_testrun.delta_m(s_ref)-delta_m)/delta_m,label=r'D-G',color='#BB00FF')
+dels_err.plot(s_ref,np.abs(TM_testrun.delta_m(s_ref)-delta_m)/delta_m,label=r"Thwaites",color='#BB00FF',linestyle=':')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_m$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_m_visc.png')
 
-fig, deld = plt.subplots(constrained_layout=True)
-deld.plot(s_ref,shape_d,label=r'$H_d$ XFOIL',marker='o',color='#A4D65E',markersize=4)
-deld.plot(s_ref_pybl,DG_testrun.shape_d(s_ref_pybl),label=r'$H_d$ PyBL, Drela-Giles, Laminar',color='#A4D65E',marker='s',markersize=4)
-deld.plot(s_ref_pybl,TM_testrun.shape_d(s_ref_pybl),label=r"$H_d$ PyBL, Thwaites'",color='#A4D65E',linestyle='--',marker='v',markersize=4)
-deld.plot(s_ref,shape_k,label=r'$H_k$ XFOIL',marker='o',color='#F2C75C',markersize=4)
-deld.plot(s_ref_pybl,DG_testrun.shape_k(s_ref_pybl),label=r'$H_k$ PyBL, Drela-Giles, Laminar',color='#F2C75C',marker='s',markersize=4)
-deld.legend(ncol=2,borderaxespad=-8.5)
-#deld.set_ylim([0,0.03])
-deld.set_xlim([0,1.])
-deld.set_ylabel('Thicknesses [m]')
-deld.set_xlabel('s [m]')
-#deld.set_title(r'$\delta_d$')
-
-fig, deld = plt.subplots(constrained_layout=True)
-deld.plot(s_ref_pybl,abs(DG_testrun.shape_d(s_ref_pybl)-shape_d)/shape_d,label=r'$H_d$ PyBL, Drela-Giles, Laminar',color='#A4D65E',marker='s',markersize=4)
-deld.plot(s_ref_pybl,abs(TM_testrun.shape_d(s_ref_pybl)-shape_d)/shape_d,label=r"$H_d$ PyBL, Thwaites'",color='#A4D65E',linestyle='--',marker='v',markersize=4)
-deld.plot(s_ref_pybl,abs(DG_testrun.shape_k(s_ref_pybl)-shape_k)/shape_k,label=r'$H_k$ PyBL, Drela-Giles, Laminar',color='#F2C75C',marker='s',markersize=4)
-deld.legend(ncol=2,borderaxespad=-7.)
-#deld.set_ylim([0,0.03])
-deld.set_yscale('log')
-deld.set_xlim([0,1.])
-deld.set_ylabel('Relative Difference')
-deld.set_xlabel('s [m]')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_k,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,DG_testrun.delta_k(s_ref),label=r'D-G',color='#F2C75C')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(DG_testrun.delta_k(s_ref)-delta_k)/delta_k,label=r'D-G',color='#F2C75C')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_k$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_k_visc.png')
 
 
-fig, deld = plt.subplots(constrained_layout=True)
-deld.plot(s_ref,c_f,label='XFOIL',marker='o',color='#F8E08E',markersize=4)
-deld.plot(s_ref,DG_testrun.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_e_visc**2),label=r'PyBL, Drela-Giles',color='#F8E08E',marker='s',markersize=4)
-deld.plot(s_ref,TM_testrun.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_e_visc**2),label=r"PyBL, Thwaites'",color='#F8E08E',marker='v',markersize=4)
-#deld.plot([rtn.x_end,rtn.x_end],[min(c_f),max(c_f)])
-deld.set_ylim([min(c_f),max(c_f)])
-#deld.plot(s_ref,u_e_visc_c+2,linestyle='--')
-deld.legend(ncol=3)
-deld.set_ylabel(r'$c_f$')
-deld.set_xlabel(r's [m]')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,shape_d,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,DG_testrun.shape_d(s_ref),label=r'D-G',color='#612D00')
+dels.plot(s_ref,TM_testrun.shape_d(s_ref),label=r"Thwaites",color='#612D00',linestyle=':')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(DG_testrun.shape_d(s_ref)-shape_d)/shape_d,label=r'D-G',color='#612D00')
+dels_err.plot(s_ref,np.abs(TM_testrun.shape_d(s_ref)-shape_d)/shape_d,label=r"Thwaites",color='#612D00',linestyle=':')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$H_d$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'shape_d_visc.png')
 
-err = abs(c_f - DG_testrun.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_e_visc**2))/c_f
-err2 = abs(c_f - TM_testrun.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_e_visc**2))/c_f
-fig,cfer = plt.subplots(constrained_layout=True)
-cfer.plot(s_ref,err,color='#F8E08E',marker='s',markersize=4,label=r'$c_f$ PyBL, Drela-Giles')
-cfer.plot(s_ref,err2,color='#F8E08E',marker='v',markersize=4,label=r"$c_f$ PyBL, Thwaites'")
-cfer.set_ylabel(r'Relative Difference')
-cfer.legend(ncol=2)
-cfer.set_yscale('log')
-cfer.set_xlabel(r's [m]')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,shape_k,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,DG_testrun.shape_k(s_ref),label=r'D-G',color='#FF8400')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(DG_testrun.shape_k(s_ref)-shape_k)/shape_k,label=r'D-G',color='#FF8400')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$H_k$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'shape_k_visc.png')
 
-fig, deld = plt.subplots(constrained_layout=True)
-deld.plot(s_ref,c_D,label='XFOIL',marker='o',color='#5CB8B2',markersize=4)
-deld.plot(s_ref,DG_testrun.dissipation(s_ref,rho_inf)/(.5*rho_inf*u_e_visc**3),label='PyBL',color='#5CB8B2',marker='s',markersize=4)
-#deld.plot([rtn.x_end,rtn.x_end],[min(c_D),max(c_D)])
-deld.set_ylim([min(c_D),max(c_D)])
-deld.legend(ncol=2)
-deld.set_ylabel(r'$c_D$')
-deld.set_xlabel(r's [m]')
 
-err = abs(c_D - DG_testrun.dissipation(s_ref,rho_inf)/(.5*rho_inf*u_e_visc**3))/c_D
-fig,cder = plt.subplots(constrained_layout=True)
-cder.plot(s_ref,err,color='#5CB8B2',marker='s',markersize=4,label=r'$c_D$ PyBL, Drela-Giles')
-#cder.plot([rtn.x_end,rtn.x_end],[min(err),max(err)])
-cder.legend()
-cder.set_ylabel(r'Relative Difference')
-cder.set_yscale('log')
-cder.set_xlabel(r's [m]')
+cf_dg = DG_testrun.tau_w(s_ref,rho_inf)/(.5*rho_inf*U_inf**2)
+cD_dg = DG_testrun.dissipation(s_ref,rho_inf)/(rho_inf*U_inf**3)
+cf_tw = TM_testrun.tau_w(s_ref,rho_inf)/(.5*rho_inf*U_inf**2)
 
-fig, nt = plt.subplots(constrained_layout=True)
-nt.plot(s_ref,n_tild,label='XFOIL',marker='o',color='#FF6A39',markersize = 4)
-nt.plot(s_ref, DG_testrun.n_tilde(s_ref),color='#FF6A39',label='PyBL, Drela-Giles, Laminar',marker='s',markersize=4)
-nt.legend(ncol=2)
-nt.set_ylim([-0.1,max(n_tild)+.1])
-nt.set_ylabel(r'$\tilde{n}$')
-nt.set_xlabel(r's [m]')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,c_f,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,cf_dg,label=r'D-G',color='#818181')
+dels.plot(s_ref,cf_tw,label=r"Thwaites",color='#818181',linestyle=':')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,abs(c_f-cf_dg)/abs(c_f),label=r'D-G',color='#818181')
+dels_err.plot(s_ref,abs(c_f-cf_tw)/abs(c_f),label=r"Thwaites",color='#818181',linestyle=':')
+dels.set_ylabel(r'$c_f$')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'c_f_visc.png')
+
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,c_D,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,cD_dg,label=r'D-G',color='#5CB8B2')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,abs(c_D-cD_dg)/abs(c_D),label=r'D-G',color='#5CB8B2')
+dels.set_ylabel(r'$c_D$')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'c_D_visc.png')
+
+fig, n_tild = plt.subplots(constrained_layout=True)
+n_tild.plot(s_ref,n_tilda,label='XFOIL',linestyle='--',color='black')
+n_tild.plot(s_ref,DG_testrun.n_tilde(s_ref),label='D-G',color='#FF6A39')
+n_tild.set_xlabel('s [m]')
+n_tild.set_ylabel(r'$\tilde{n}$')
+n_tild.legend(ncol=2,borderaxespad=-5.5)
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'n_tild_visc.png')
 
 plt.show()
 pass

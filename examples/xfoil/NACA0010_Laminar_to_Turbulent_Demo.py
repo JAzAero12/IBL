@@ -11,12 +11,30 @@ from ibl.initial_condition import ManualCondition
 from ibl.drela_giles_laminar_mod import DrelaGilesLaminarMOD
 from ibl.drela_giles_turbulent_mod import DrelaGilesTurbulentMOD
 from ibl.transition_coupler import transition_coupler
+
+
+import os
+
+# NACA 0010 Re = 1000000
 plt.rcParams['font.family'] = 'Times New Roman'
-plt.rcParams['font.size'] = 12
-plt.rcParams['figure.figsize'] = [6, 4]
+plt.rcParams['font.size'] = 24
+plt.rcParams['figure.figsize'] = [13, 8]
 plt.rcParams['legend.loc'] = 'lower center'
-plt.rcParams['legend.borderaxespad'] = -6.
+plt.rcParams['legend.borderaxespad'] = -8.6
 plt.rcParams["axes.grid"] = True
+plt.rcParams["lines.linewidth"] = 3.
+plt.rcParams["mathtext.fontset"] = "custom"
+plt.rcParams["mathtext.rm"] = "Times New Roman"
+plt.rcParams["mathtext.it"] = "Times New Roman:italic"
+plt.rcParams["mathtext.bf"] = "Times New Roman:bold"
+plt.rcParams["mathtext.default"] = "rm"
+#print(os.path.dirname(os.path.abspath(__file__)))
+
+file_name = "NACA0010_Re1E6_TR"
+file_name = os.path.dirname(os.path.abspath(__file__))+'\\'+file_name
+print(file_name)
+if not os.path.exists(file_name):
+    os.mkdir(file_name)
 
 transition_loc = 0.5
 re_inf = 1000000
@@ -53,16 +71,17 @@ u_e_per_u_inf = np.array([0.09563,0.28758,0.46594,0.61837,0.74137,0.8374,0.9115,
                     0.93393,0.91917,0.90844])
 
 u_e_visc = u_e_per_u_inf*u_inf
-fig, velplot = plt.subplots()
-velplot.plot(s_ref,u_e_visc,color='#154734')
-velplot.set_title(r'u_e')
+fig, velplot = plt.subplots(constrained_layout=True)
+velplot.plot(s_ref,u_e_visc,color='#154734',marker='o',markersize=4)
+velplot.set_ylabel(r'$u_e$ [m/s]')
+velplot.set_xlabel('s [m]')
 
 T_air= 288.15 
 R_air = 287 
 gamma = 1.4
 m_e_visc = u_e_visc/np.sqrt(gamma*R_air*T_air)
 
-delta_m_XF = np.array([0.0000272,0.000028,0.0000298,0.0000326,0.0000364,0.0000409,0.000046,
+delta_m = np.array([0.0000272,0.000028,0.0000298,0.0000326,0.0000364,0.0000409,0.000046,
                     0.0000518,0.0000582,0.0000653,0.0000731,0.0000817,0.0000914,0.0001022,
                     0.0001143,0.0001274,0.0001414,0.0001558,0.0001703,0.0001846,0.0001985,
                     0.0002122,0.0002255,0.0002385,0.0002512,0.0002637,0.0002759,0.000288,
@@ -75,7 +94,7 @@ delta_m_XF = np.array([0.0000272,0.000028,0.0000298,0.0000326,0.0000364,0.000040
                     0.0014629,0.0015204,0.0015825,0.0016507,0.0017273,0.0018149,0.001917,
                     0.0020351,0.0021692,0.0022727])
 
-delta_d_XF = np.array([0.0000607,0.0000625,0.000067,0.0000739,0.0000832,0.0000944,0.0001073,
+delta_d = np.array([0.0000607,0.0000625,0.000067,0.0000739,0.0000832,0.0000944,0.0001073,
                     0.000122,0.0001383,0.0001565,0.0001767,0.0001992,0.0002245,0.0002528,
                     0.0002845,0.0003192,0.0003562,0.0003945,0.0004332,0.0004716,0.0005095,
                     0.0005467,0.0005833,0.0006193,0.000655,0.0006903,0.0007253,0.0007602,
@@ -88,7 +107,7 @@ delta_d_XF = np.array([0.0000607,0.0000625,0.000067,0.0000739,0.0000832,0.000094
                     0.0021419,0.0022317,0.0023301,0.0024406,0.0025676,0.0027179,0.0029003,
                     0.0031217,0.0033887,0.003601])
 
-delta_k_XF = np.array([0.0000441,0.0000453,0.0000482,0.0000527,0.0000586,0.0000657,0.0000739,
+delta_k = np.array([0.0000441,0.0000453,0.0000482,0.0000527,0.0000586,0.0000657,0.0000739,
                     0.000083,0.0000931,0.0001042,0.0001165,0.0001301,0.0001453,0.0001624,
                     0.0001813,0.0002019,0.0002238,0.0002464,0.0002691,0.0002914,0.0003133,
                     0.0003346,0.0003554,0.0003756,0.0003954,0.0004148,0.0004338,0.0004525,
@@ -101,7 +120,7 @@ delta_k_XF = np.array([0.0000441,0.0000453,0.0000482,0.0000527,0.0000586,0.00006
                     0.0025502,0.0026475,0.002752,0.002866,0.0029926,0.0031359,0.0033002,
                     0.0034866,0.0036936,0.0038528])
 
-shape_d_XF = np.array([2.2295,2.2342,2.2487,2.2655,2.2877,2.3097,2.3329,
+shape_d = np.array([2.2295,2.2342,2.2487,2.2655,2.2877,2.3097,2.3329,
                         2.3553,2.3771,2.3981,2.4181,2.4372,2.4556,2.4729,
                         2.4895,2.5049,2.5191,2.5321,2.544,2.5552,2.5659,
                         2.5764,2.5867,2.597,2.6074,2.6179,2.6286,2.6396,
@@ -114,7 +133,7 @@ shape_d_XF = np.array([2.2295,2.2342,2.2487,2.2655,2.2877,2.3097,2.3329,
                         1.4642,1.4678,1.4724,1.4785,1.4865,1.4976,1.5129,
                         1.5339,1.5622,1.5844])
 
-shape_k_XF = np.array([1.6211,1.6203,1.618,1.6154,1.6121,1.6089,1.6056,
+shape_k = np.array([1.6211,1.6203,1.618,1.6154,1.6121,1.6089,1.6056,
                         1.6025,1.5996,1.5969,1.5944,1.5921,1.5899,1.5879,
                         1.586,1.5843,1.5828,1.5814,1.5802,1.5791,1.578,
                         1.577,1.576,1.575,1.574,1.573,1.572,1.5711,
@@ -128,7 +147,7 @@ shape_k_XF = np.array([1.6211,1.6203,1.618,1.6154,1.6121,1.6089,1.6056,
                         1.7278,1.7215,1.7133,1.7027,1.6953])
 
 
-c_f_XF = np.array([0.0025219,0.0073329,0.0109315,0.0129493,0.0135173,0.0131851,0.0123411,
+c_f = np.array([0.0025219,0.0073329,0.0109315,0.0129493,0.0135173,0.0131851,0.0123411,
                 0.0112942,0.0101964,0.0091312,0.0081347,0.0072203,0.006387,0.0056379,
                 0.0049709,0.0043888,0.0038919,0.0034755,0.0031296,0.0028415,0.0025993,
                 0.0023928,0.0022145,0.0020584,0.0019202,0.0017966,0.0016852,0.0015839,
@@ -140,7 +159,7 @@ c_f_XF = np.array([0.0025219,0.0073329,0.0109315,0.0129493,0.0135173,0.0131851,0
                 0.0038128,0.0037338,0.0036542,0.0035729,0.003489,0.003401,0.0033072,0.0032055,
                 0.0030928,0.0029652,0.0028177,0.0026452,0.0024479,0.0022285,0.0020727])
 
-c_D_XF = np.array([0.0000693,0.0006081,0.0014835,0.0023602,0.0030031,0.0033661,0.0034949,
+c_D = np.array([0.0000693,0.0006081,0.0014835,0.0023602,0.0030031,0.0033661,0.0034949,
                 0.0034645,0.0033351,0.0031496,0.0029351,0.0027087,0.00248,0.0022567,
                 0.0020442,0.0018481,0.001673,0.0015208,0.0013909,0.0012804,0.0011861,
                 0.001105,0.0010344,0.0009724,0.0009174,0.0008682,0.0008239,0.0007836,
@@ -153,7 +172,7 @@ c_D_XF = np.array([0.0000693,0.0006081,0.0014835,0.0023602,0.0030031,0.0033661,0
                 0.0016119,0.0015743,0.0015345,0.001492,0.0014457,0.0013949,0.0013391,
                 0.0012799,0.00122,0.0011803])
 
-re_delta_m_XF = np.array([2.602,8.04,13.884,20.18,26.958,34.209,41.938,
+re_delta_m = np.array([2.602,8.04,13.884,20.18,26.958,34.209,41.938,
                         50.167,58.952,68.383,78.583,89.708,101.939,115.427,
                         130.239,146.245,163.082,180.264,197.351,214.066,230.28,
                         245.959,261.119,275.798,290.037,303.876,317.355,330.506,
@@ -166,7 +185,7 @@ re_delta_m_XF = np.array([2.602,8.04,13.884,20.18,26.958,34.209,41.938,
                         1459.524,1507.79,1558.871,1613.726,1673.688,1740.489,1815.988,
                         1900.604,1993.906,2064.618])
 
-n_tild_c_tau = np.array([0,0,0,0,0,0,0,
+n_tild_c_tau_sqrt = np.array([0,0,0,0,0,0,0,
                     0,0,0,0,0,0,0,
                     0,0,0,0,0,0,0,
                     0,0.0087552,0.0701571,0.1870706,0.3297438,0.4744924,0.6209138,
@@ -180,253 +199,238 @@ n_tild_c_tau = np.array([0,0,0,0,0,0,0,
                     0.0413841,0.0419969,0.0424731])
 
 
-c_tau_eq_XF = np.array([0.0788606,0.0710830,0.0604549,0.0513836,0.0453720,0.0418340,
+c_tau_eq_sqrt = np.array([0.0788606,0.0710830,0.0604549,0.0513836,0.0453720,0.0418340,
                     0.0398678,0.0388201,0.0382957,0.0380672,0.0380048,0.0380341,0.0381120,
                     0.0382140,0.0383264,0.0384418,0.0385572,0.0386717,0.0387864,0.0389033,
                     0.0390256,0.0391573,0.0393034,0.0394704,0.0396668,0.0399039,0.0401974,
                     0.0405704,0.0410567,0.0417059,0.0425853,0.0437494,0.0452514,0.0464124,
                     ])
 
-ic = ManualCondition(delta_d=delta_d_XF[0],delta_m=delta_m_XF[0],delta_k=delta_k_XF[0])
+ic = ManualCondition(delta_d=delta_d[0],delta_m=delta_m[0],delta_k=delta_k[0])
 
 dg_laminar = DrelaGilesLaminarMOD(nu=nu_inf,U_e=[s_ref,u_e_visc],ic=ic,src=True)
 
 turbstart_idx = 46 #appears to be where XFOIL transitions
 turbstart = s_ref[turbstart_idx]
-turbulent_model = DrelaGilesTurbulentMOD(nu = nu_inf, U_e= [s_ref,u_e_visc],show_prog=False,src=True)
-turbulent_model.initial_delta_m = delta_m_XF[turbstart_idx]
-turbulent_model.initial_shape_d = delta_d_XF[turbstart_idx]/delta_m_XF[turbstart_idx]
-#turbulent_model.initial_shape_k = delta_k_XF[turbstart_idx]/delta_m_XF[turbstart_idx]
-rtn_turb = turbulent_model.solve(x0=turbstart,x_end=s_ref[-1])
-print(rtn_turb.message)
-print(rtn_turb.x_end)
-c_tau = turbulent_model.tau_w(s_ref[turbstart_idx:],rho_inf)
-c_tau_XF = n_tild_c_tau[turbstart_idx:]
-redelm = u_e_visc[turbstart_idx:]*turbulent_model.delta_m(s_ref[turbstart_idx:])/nu_inf
-c_tau_eq = turbulent_model._c_tau_eq(turbulent_model.shape_d(s_ref[turbstart_idx:]),redelm,m_e_visc[turbstart_idx:],True)
+# turbulent_model = DrelaGilesTurbulentMOD(nu = nu_inf, U_e= [s_ref,u_e_visc],show_prog=False,src=True)
+# turbulent_model.initial_delta_m = delta_m[turbstart_idx]
+# turbulent_model.initial_shape_d = delta_d[turbstart_idx]/delta_m[turbstart_idx]
+# #turbulent_model.initial_shape_k = delta_k_XF[turbstart_idx]/delta_m_XF[turbstart_idx]
+# rtn_turb = turbulent_model.solve(x0=turbstart,x_end=s_ref[-1])
+# print(rtn_turb.message)
+# print(rtn_turb.x_end)
+# c_tau = turbulent_model.tau_w(s_ref[turbstart_idx:],rho_inf)
+# c_tau_XF = n_tild_c_tau_sqrt[turbstart_idx:]
+# redelm = u_e_visc[turbstart_idx:]*turbulent_model.delta_m(s_ref[turbstart_idx:])/nu_inf
+# c_tau_eq = turbulent_model._c_tau_eq(turbulent_model.shape_d(s_ref[turbstart_idx:]),redelm,m_e_visc[turbstart_idx:],True)
 
-fig, c_taus = plt.subplots()
-#c_taus.plot(s_ref[turbstart_idx:],c_tau**.5,label='PyBL, ctau sqrt')
-c_taus.plot(s_ref[turbstart_idx:],c_tau_eq,label=r'$c_{\tau EQ}$ PyBL',marker='o',markersize=4,color='#D0DF00')
-c_taus.plot(s_ref[turbstart_idx:],c_tau_XF**2,label=r'$c_\tau$',marker='o',markersize=4,color='#FF6A39',linestyle='--')
-c_taus.plot(s_ref[turbstart_idx:],c_tau_eq_XF**2,label=r'$c_{\tau EQ}$ XFOIL',marker='o',markersize=4,color='#D0DF00',linestyle='--')
-c_taus.plot(s_ref[turbstart_idx:],turbulent_model.c_tau(s_ref[turbstart_idx:]),label=r'$c_{\tau}$ PyBL',marker='o',markersize=4,color='#FF6A39')
-c_taus.set_title(r'$c_{\tau}$')
-c_taus.legend()
+# fig, turbres = plt.subplots()
+# turbres.plot(s_ref[turbstart_idx:],delta_d[turbstart_idx:],label=r'$\delta_d$ XFOIL',linestyle='--',marker='o',markersize=4,color='#A4D65E')
+# turbres.plot(s_ref[turbstart_idx:],delta_m[turbstart_idx:],label=r'$\delta_m$ XFOIL',linestyle='--',marker='o',markersize=4,color='#3A913F')
+# turbres.plot(s_ref[turbstart_idx:],delta_k[turbstart_idx:],label=r'$\delta_k$ XFOIL',linestyle='--',marker='o',markersize=4,color='#F2C75C')
+# turbres.plot(s_ref[turbstart_idx:],turbulent_model.delta_d(s_ref[turbstart_idx:]),label=r'$\delta_d$ PyBL, Drela-Giles',marker='s',markersize=4,color='#A4D65E')
+# turbres.plot(s_ref[turbstart_idx:],turbulent_model.delta_m(s_ref[turbstart_idx:]),label=r'$\delta_m$ PyBL, Drela-Giles',marker='s',markersize=4,color='#3A913F')
+# turbres.plot(s_ref[turbstart_idx:],turbulent_model.delta_k(s_ref[turbstart_idx:]),label=r'$\delta_k$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F2C75C')
+# #deltas.set_title('Boundary Layer Thicknesses')
+# turbres.legend(ncol=2,borderaxespad=-8.5)
+# turbres.set_xlabel(r'$s$ [m]')
+# turbres.set_ylabel('Thicknesses [m]')
 
-print('XFOIL c_tau ratio')
-print(c_tau_XF[0]/c_tau_eq_XF[0])
+# fig, turbres = plt.subplots()
+# turbres.plot(s_ref[turbstart_idx:],np.abs(turbulent_model.delta_d(s_ref[turbstart_idx:])-delta_d[turbstart_idx:])/delta_d[turbstart_idx:],label=r'$\delta_d$ PyBL, Drela-Giles',marker='s',markersize=4,color='#A4D65E')
+# turbres.plot(s_ref[turbstart_idx:],np.abs(turbulent_model.delta_m(s_ref[turbstart_idx:])-delta_m[turbstart_idx:])/delta_m[turbstart_idx:],label=r'$\delta_m$ PyBL, Drela-Giles',marker='s',markersize=4,color='#3A913F')
+# turbres.plot(s_ref[turbstart_idx:],np.abs(turbulent_model.delta_k(s_ref[turbstart_idx:])-delta_k[turbstart_idx:])/delta_k[turbstart_idx:],label=r'$\delta_k$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F2C75C')
+# #deltas.set_title('Boundary Layer Thicknesses')
+# turbres.set_yscale('log')
+# turbres.legend(ncol=3,borderaxespad=-6.)
+# turbres.set_xlabel(r'$s$ [m]')
+# turbres.set_ylabel('Relative Differences')
+
+
+# fig, c_taus = plt.subplots()
+# #c_taus.plot(s_ref[turbstart_idx:],c_tau**.5,label='PyBL, ctau sqrt')
+# c_taus.plot(s_ref[turbstart_idx:],c_tau_eq,label=r'$c_{\tau EQ}$ PyBL',marker='o',markersize=4,color='#D0DF00')
+# c_taus.plot(s_ref[turbstart_idx:],c_tau_XF**2,label=r'$c_\tau$',marker='o',markersize=4,color='#FF6A39',linestyle='--')
+# c_taus.plot(s_ref[turbstart_idx:],c_tau_eq_sqrt**2,label=r'$c_{\tau EQ}$ XFOIL',marker='o',markersize=4,color='#D0DF00',linestyle='--')
+# c_taus.plot(s_ref[turbstart_idx:],turbulent_model.c_tau(s_ref[turbstart_idx:]),label=r'$c_{\tau}$ PyBL',marker='o',markersize=4,color='#FF6A39')
+# c_taus.set_title(r'$c_{\tau}$')
+# c_taus.legend()
+
+# print('XFOIL c_tau ratio')
+# print(c_tau_XF[0]/c_tau_eq_sqrt[0])
 
 pass
 transition_loc = s_ref[46]
 full_model = transition_coupler(solution_range=s_ref,laminar_model=dg_laminar,turbulent_class=DrelaGilesTurbulentMOD,nu=nu_inf,U_e=[s_ref,u_e_visc],transition_loc=turbstart)
 
-delta_d = full_model.delta_d(s_ref)
-delta_m = full_model.delta_m(s_ref)
-delta_k = full_model.delta_k(s_ref)
-shape_d = full_model.shape_d(s_ref)
-shape_k = full_model.shape_k(s_ref)
-c_f     = full_model.tau_w(s_ref,rho_inf)/(0.5*rho_inf*u_e_visc**2)
-c_D     = full_model.dissipation(s_ref,rho_inf)/(0.5*rho_inf*u_e_visc**3)
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,delta_d_XF,label=r'$\delta_d$ XFOIL',linestyle='--',marker='o',markersize=4,color='#A4D65E')
-deltas.plot(s_ref,delta_m_XF,label=r'$\delta_m$ XFOIL',linestyle='--',marker='o',markersize=4,color='#3A913F')
-deltas.plot(s_ref,delta_k_XF,label=r'$\delta_k$ XFOIL',linestyle='--',marker='o',markersize=4,color='#F2C75C')
-deltas.plot(s_ref,delta_d,label=r'$\delta_d$ PyBL, Drela-Giles',marker='s',markersize=4,color='#A4D65E')
-deltas.plot(s_ref,delta_m,label=r'$\delta_m$ PyBL, Drela-Giles',marker='s',markersize=4,color='#3A913F')
-deltas.plot(s_ref,delta_k,label=r'$\delta_k$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F2C75C')
-deltas.plot([transition_loc,transition_loc],[min(delta_m_XF),max(delta_d_XF)],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses')
-deltas.legend(ncol=2,borderaxespad=-8.5)
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Thicknesses [m]')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_d,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.delta_d(s_ref),label=r'D-G, Lam + Turb',color='#A4D65E')
+dels.plot([transition_loc,transition_loc],[min(delta_d),max(delta_d)],color='black',linestyle='--')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.delta_d(s_ref)-delta_d)/delta_d,label=r'D-G, Lam + Turb',color='#A4D65E')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_d$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_d_visc.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,np.abs(delta_d-delta_d_XF)/delta_d_XF,label=r'$\delta_d$ PyBL, Drela-Giles',marker='s',markersize=4,color='#A4D65E')
-deltas.plot(s_ref,np.abs(delta_m-delta_m_XF)/delta_m_XF,label=r'$\delta_m$ PyBL, Drela-Giles',marker='s',markersize=4,color='#3A913F')
-deltas.plot(s_ref,np.abs(delta_k-delta_k_XF)/delta_k_XF,label=r'$\delta_k$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F2C75C')
-deltas.plot([transition_loc,transition_loc],[1e-6,1e-1],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses, Relative Errors')
-deltas.set_yscale('log')
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Relative Difference')
-deltas.legend(borderaxespad=-8.5)
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_m,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.delta_m(s_ref),label=r'D-G, Lam + Turb',color='#BB00FF')
+dels.plot([transition_loc,transition_loc],[min(delta_m),max(delta_m)],color='black',linestyle='--')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.delta_m(s_ref)-delta_m)/delta_m,label=r'D-G, Lam + Turb',color='#BB00FF')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_m$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_m_visc.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,shape_d_XF,label=r'$H_d$ XFOIL',linestyle='--',marker='o',markersize=4,color='#A4D65E')
-deltas.plot(s_ref,shape_k_XF,label=r'$H_k$ XFOIL',linestyle='--',marker='o',markersize=4,color='#F2C75C')
-deltas.plot(s_ref,shape_d,label=r'$H_d$ PyBL, Drela-Giles',marker='s',markersize=4,color='#A4D65E')
-deltas.plot(s_ref,shape_k,label=r'$H_k$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F2C75C')
-deltas.plot([transition_loc,transition_loc],[min(shape_d_XF),max(shape_d_XF)],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses')
-deltas.legend(ncol=2,borderaxespad=-7.3)
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Shape Factors')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_k,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.delta_k(s_ref),label=r'D-G, Lam + Turb',color='#F2C75C')
+dels.plot([transition_loc,transition_loc],[min(delta_k),max(delta_k)],color='black',linestyle='--')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.delta_k(s_ref)-delta_k)/delta_k,label=r'D-G, Lam + Turb',color='#F2C75C')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_k$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_k_visc.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,np.abs(shape_d-shape_d_XF)/shape_d_XF,label=r'$H_d$ PyBL, Drela-Giles',marker='s',markersize=4,color='#A4D65E')
-deltas.plot(s_ref,np.abs(shape_k-shape_k_XF)/shape_k_XF,label=r'$H_k$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F2C75C')
-deltas.plot([transition_loc,transition_loc],[1e-6,1e-1],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses, Relative Errors')
-deltas.set_yscale('log')
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Relative Difference')
-deltas.legend(ncol=2)
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,c_f_XF,label=r'$c_f$ XFOIL',linestyle='--',marker='o',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,c_D_XF,label=r'$c_D$ XFOIL',linestyle='--',marker='o',markersize=4,color='#5CB8B2')
-deltas.plot(s_ref,c_f,label=r'$c_f$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,c_D,label=r'$c_D$ PyBL, Drela-Giles',marker='s',markersize=4,color='#5CB8B2')
-deltas.plot([transition_loc,transition_loc],[0,max(c_f)],color='black',linestyle='--')
-deltas.set_ylim([0,0.02])
-#deltas.set_title('Boundary Layer Thicknesses')
-deltas.legend(ncol=2,borderaxespad=-7.3)
-deltas.set_ylabel('Coefficients')
-deltas.set_xlabel('s [m]')
-#deltas.set_ylabel('Shape Factors')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,shape_d,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.shape_d(s_ref),label=r'D-G, Lam + Turb',color='#612D00')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.shape_d(s_ref)-shape_d)/shape_d,label=r'D-G, Lam + Turb',color='#612D00')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$H_d$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'shape_d_visc.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,np.abs(c_f-c_f_XF)/c_f_XF,label=r'$c_f$ PyBL, Drela-Giles',marker='s',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,np.abs(c_D-c_D_XF)/c_D_XF,label=r'$c_D$ PyBL, Drela-Giles',marker='s',markersize=4,color='#5CB8B2')
-deltas.plot([transition_loc,transition_loc],[1e-3,1e2],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses, Relative Errors')
-deltas.set_yscale('log')
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Relative Difference')
-deltas.legend(ncol=2)
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,shape_k,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.shape_k(s_ref),label=r'D-G, Lam + Turb',color='#FF8400')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.shape_k(s_ref)-shape_k)/shape_k,label=r'D-G, Lam + Turb',color='#FF8400')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$H_k$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'shape_k_visc.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-shape_km_XF = DrelaGilesLaminarMOD._shape_km(shape_d_XF,m_e_visc)
-tmp1 = DrelaGilesLaminarMOD._c_f_dg(shape_km_XF,re_delta_m_XF,True)
-tmp2 = DrelaGilesLaminarMOD._c_D(shape_km_XF,shape_k_XF,re_delta_m_XF,True)
-fctmp = DrelaGilesTurbulentMOD._fc(m_e_visc,True,1.4)
-tmp1_1 = DrelaGilesTurbulentMOD._c_f_dg(shape_km_XF,re_delta_m_XF,fctmp,True)
-u_stmp = DrelaGilesTurbulentMOD._u_s(shape_km_XF,re_delta_m_XF,m_e_visc,True)
-tmp2_1 = DrelaGilesTurbulentMOD._c_D(tmp1_1,u_stmp,n_tild_c_tau**2,True)
-c_f = np.append(tmp1[:turbstart_idx],tmp1_1[turbstart_idx:])
-c_D = np.append(tmp2[:turbstart_idx],tmp2_1[turbstart_idx:])
-deltas.plot(s_ref,c_f_XF,label=r'$c_f$ XFOIL',linestyle='--',marker='o',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,c_D_XF,label=r'$c_D$ XFOIL',linestyle='--',marker='o',markersize=4,color='#5CB8B2')
-deltas.plot(s_ref,c_f,label=r'$c_f$ XFOIL, PyBL Static Method',marker='s',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,c_D,label=r'$c_D$ XFOIL, PyBL Static Method',marker='s',markersize=4,color='#5CB8B2')
-deltas.plot([transition_loc,transition_loc],[0,max(c_f)],color='black',linestyle='--')
-deltas.set_ylim([0,0.02])
-#deltas.set_title('Boundary Layer Thicknesses')
-deltas.legend(ncol=2,borderaxespad=-7.3)
-deltas.set_ylabel('Coefficients')
-deltas.set_xlabel('s [m]')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,np.abs(c_f-c_f_XF)/c_f_XF,label=r'$c_f$ XFOIL, PyBL Static Method',marker='s',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,np.abs(c_D-c_D_XF)/c_D_XF,label=r'$c_D$ XFOIL, PyBL Static Method',marker='s',markersize=4,color='#5CB8B2')
-deltas.plot([transition_loc,transition_loc],[1e-3,1e2],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses, Relative Errors')
-deltas.set_yscale('log')
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Relative Difference')
-deltas.legend(ncol=2)
+cf_dg = full_model.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_inf**2)
+cD_dg = full_model.dissipation(s_ref,rho_inf)/(rho_inf*u_inf**3)
 
-# ddeld_dx_pybl = []
-# ddeld_dx_fd = []
-# for idx,(s,delm,deld) in enumerate(zip(s_ref[:46],delta_m_XF[:46],delta_d_XF[:46])):
-#     f = np.array([delm,deld,0.])
-#     f_p = DrelaGilesLaminarMOD._ode_impl(dg_laminar,s,f)
-#     FD_deld = (delta_d_XF[idx+1] - deld)/(s_ref[idx+1] - s)
-#     ddeld_dx_pybl.append(f_p[1])
-#     ddeld_dx_fd.append(FD_deld)
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,c_f,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,cf_dg,label=r'D-G, Lam + Turb',color='#818181')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,abs(c_f-cf_dg)/abs(c_f),label=r'D-G, Lam + Turb',color='#818181')
+dels.set_ylabel(r'$c_f$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+dels_err.legend(ncol=2,borderaxespad=-5.5)
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'c_f_visc.png')
 
-# fig, dddx = plt.subplots()
-# dddx.plot(s_ref[:46],ddeld_dx_pybl,label='PyBL ddelta_d_dx',marker='o',markersize=4,color='#A4D65E')
-# dddx.plot(s_ref[:46],ddeld_dx_fd,label='XFOIL ddelta_d_dx',linestyle='--',marker='o',markersize=4,color='#A4D65E')
-# dddx.legend()
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,c_D,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,cD_dg,label=r'D-G, Lam + Turb',color='#5CB8B2')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,abs(c_D-cD_dg)/abs(c_D),label=r'D-G, Lam + Turb',color='#5CB8B2')
+dels.set_ylabel(r'$c_D$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+dels_err.legend(ncol=2,borderaxespad=-5.5)
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'c_D_visc.png')
 
-# fig, dddx = plt.subplots()
-# dddx.plot(s_ref[:46],abs(np.array(ddeld_dx_pybl) - np.array(ddeld_dx_fd))/abs(np.array(ddeld_dx_fd)),marker='o',markersize=4,color='#A4D65E')
-# dddx.set_title('ddelta_d_dx relative error')
-
-#Thwaites and Heads Method, with the preprocessing
 
 def Head_Preproc(lam_end_del_d,lam_end_del_m,lam_end_del_k,solution_range_laminar_end,nu,U_e_end,dU_edx_end,d2U_edx2_end):
     Re_dm_tmp = lam_end_del_m*U_e_end/nu
     Hd_tr = 1.4754/(np.log(Re_dm_tmp)) + 0.9698
-    return lam_end_del_d,lam_end_del_m*Hd_tr,lam_end_del_k
+    return lam_end_del_m*Hd_tr,lam_end_del_m,lam_end_del_k
 
 tm_method = ThwaitesMethodNonlinear(nu=nu_inf,U_e=[s_ref,u_e_visc],data_fits="Spline")
 tm_method.initial_delta_m = delta_m[0]
 
-full_model2 = transition_coupler(solution_range=s_ref,laminar_model=tm_method,turbulent_class=HeadMethod,nu=nu_inf,U_e=[s_ref,u_e_visc],transition_loc=turbstart,turb_ic_preprocessor=Head_Preproc)
+full_model = transition_coupler(solution_range=s_ref,laminar_model=tm_method,turbulent_class=HeadMethod,nu=nu_inf,U_e=[s_ref,u_e_visc],transition_loc=turbstart,turb_ic_preprocessor=Head_Preproc)
 
-delta_d = full_model2.delta_d(s_ref)
-delta_m = full_model2.delta_m(s_ref)
-delta_k = full_model2.delta_k(s_ref)
-shape_d = full_model2.shape_d(s_ref)
-shape_k = full_model2.shape_k(s_ref)
-c_f     = full_model2.tau_w(s_ref,rho_inf)/(0.5*rho_inf*u_e_visc**2)
-c_D     = full_model2.dissipation(s_ref,rho_inf)/(0.5*rho_inf*u_e_visc**3)
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_d,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.delta_d(s_ref),label=r'TM_HM',color='#A4D65E')
+dels.plot([transition_loc,transition_loc],[min(delta_d),max(delta_d)],color='black',linestyle='--')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.delta_d(s_ref)-delta_d)/delta_d,label=r'TM_HM',color='#A4D65E')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_d$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_d_visc_TM_HM.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,delta_d_XF,label=r'$\delta_d$ XFOIL',linestyle='--',marker='o',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,delta_m_XF,label=r'$\delta_m$ XFOIL',linestyle='--',marker='o',markersize=4,color='#3A913F')
-#deltas.plot(s_ref,delta_k_XF,label=r'$\delta_k$ XF',linestyle='--',marker='o',markersize=4,color='#F2C75C')
-deltas.plot(s_ref,delta_d,label=r"$\delta_d$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,delta_m,label=r"$\delta_m$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#3A913F')
-#deltas.plot(s_ref,delta_k,label=r'$\delta_k$ PyBL',marker='o',markersize=4,color='#F2C75C')
-deltas.plot([transition_loc,transition_loc],[min(delta_m_XF),max(delta_d_XF)],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses, Thwaites and Heads')
-deltas.legend(ncol=2,borderaxespad=-7.3)
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Thicknesses [m]')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,delta_m,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.delta_m(s_ref),label=r'TM_HM',color='#BB00FF')
+dels.plot([transition_loc,transition_loc],[min(delta_m),max(delta_m)],color='black',linestyle='--')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.delta_m(s_ref)-delta_m)/delta_m,label=r'TM_HM',color='#BB00FF')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$\delta_m$ [m]')
+dels_err.set_yscale('log')
+dels_err.set_ylim([1e-5,1])
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'delta_m_visc_TM_HM.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,np.abs(delta_d-delta_d_XF)/delta_d_XF,label=r"$\delta_d$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,np.abs(delta_m-delta_m_XF)/delta_m_XF,label=r"$\delta_m$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#3A913F')
-#deltas.plot(s_ref,np.abs(delta_k-delta_k_XF)/delta_k_XF,label=r'$\delta_k$ PyBL',marker='o',markersize=4,color='#F2C75C')
-deltas.plot([transition_loc,transition_loc],[1e-15,1e-1],color='black',linestyle='--')
-deltas.set_ylim([5e-6,1])
-#deltas.set_title('Boundary Layer Thicknesses, Relative Errors, Thwaites and Heads')
-deltas.set_yscale('log')
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Relative Difference')
-deltas.legend(ncol=2)
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,shape_d_XF,label=r'$H_d$ XFOIL',linestyle='--',marker='o',markersize=4,color='#A4D65E')
-deltas.plot(s_ref,shape_d,label=r"$H_d$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#A4D65E')
-deltas.plot([transition_loc,transition_loc],[min(shape_d_XF),max(shape_d_XF)],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses')
-deltas.legend(ncol=2)
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Shape Factors')
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,shape_d,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,full_model.shape_d(s_ref),label=r'TM_HM',color='#612D00')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,np.abs(full_model.shape_d(s_ref)-shape_d)/shape_d,label=r'TM_HM',color='#612D00')
+dels_err.legend(ncol=3,borderaxespad=-5.5)
+dels.set_ylabel(r'$H_d$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'shape_d_visc_TM_HM.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,np.abs(shape_d-shape_d_XF)/shape_d_XF,label=r"$H_d$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#A4D65E')
-deltas.plot([transition_loc,transition_loc],[1e-6,1e-1],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses, Relative Errors')
-deltas.set_yscale('log')
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Relative Difference')
-deltas.legend()
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,c_f_XF,label=r'$c_f$ XFOIL',linestyle='--',marker='o',markersize=4,color='#F8E08E')
-deltas.plot(s_ref,c_f,label=r"$c_f$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#F8E08E')
-deltas.plot([transition_loc,transition_loc],[0,max(c_f)],color='black',linestyle='--')
-deltas.set_ylim([0,0.02])
-#deltas.set_title('Boundary Layer Thicknesses')
-deltas.legend(ncol=2)
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Coefficients')
+cf_dg = full_model.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_inf**2)
+fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
+dels.plot(s_ref,c_f,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
+dels.plot(s_ref,cf_dg,label=r'TM_HM',color='#818181')
+dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
+dels_err.plot(s_ref,abs(c_f-cf_dg)/abs(c_f),label=r'TM_HM',color='#818181')
+dels.set_ylabel(r'$c_f$')
+dels_err.set_yscale('log')
+dels_err.set_ylabel('Relative Difference')
+dels_err.set_xlabel('s [m]')
+dels_err.legend(ncol=2,borderaxespad=-5.5)
+fig.tight_layout()
+fig.savefig(file_name+'\\'+'c_f_visc_TM_HM.png')
 
-fig, deltas = plt.subplots(constrained_layout=True)
-deltas.plot(s_ref,np.abs(c_f-c_f_XF)/c_f_XF,label=r"$c_f$ PyBL, Thwaites' & Head's",marker='s',markersize=4,color='#F8E08E')
-deltas.plot([transition_loc,transition_loc],[1e-3,1e2],color='black',linestyle='--')
-#deltas.set_title('Boundary Layer Thicknesses, Relative Errors')
-deltas.set_yscale('log')
-deltas.set_xlabel('s [m]')
-deltas.set_ylabel('Relative Difference')
-deltas.legend()
 
 plt.show()
-pass

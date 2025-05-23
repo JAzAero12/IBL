@@ -18,7 +18,11 @@ plt.rcParams['legend.loc'] = 'lower center'
 plt.rcParams['legend.borderaxespad'] = -8.6
 plt.rcParams["axes.grid"] = True
 plt.rcParams["lines.linewidth"] = 3.
-
+plt.rcParams["mathtext.fontset"] = "custom"
+plt.rcParams["mathtext.rm"] = "Times New Roman"
+plt.rcParams["mathtext.it"] = "Times New Roman:italic"
+plt.rcParams["mathtext.bf"] = "Times New Roman:bold"
+plt.rcParams["mathtext.default"] = "rm"
 #print(os.path.dirname(os.path.abspath(__file__)))
 
 file_name = "NACA0012_Re1E6_TR"
@@ -310,9 +314,9 @@ fig.savefig(file_name+'\\'+'delta_d_visc.png')
 
 fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
 dels.plot(s_ref,delta_m,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
-dels.plot(s_ref,full_model.delta_m(s_ref),label=r'D-G, Lam + Turb',color='#3A913F')
+dels.plot(s_ref,full_model.delta_m(s_ref),label=r'D-G, Lam + Turb',color='#BB00FF')
 dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
-dels_err.plot(s_ref,np.abs(full_model.delta_m(s_ref)-delta_m)/delta_m,label=r'D-G, Lam + Turb',color='#3A913F')
+dels_err.plot(s_ref,np.abs(full_model.delta_m(s_ref)-delta_m)/delta_m,label=r'D-G, Lam + Turb',color='#BB00FF')
 dels_err.legend(ncol=3,borderaxespad=-5.5)
 dels.set_ylabel(r'$\delta_m$ [m]')
 dels_err.set_yscale('log')
@@ -337,9 +341,9 @@ fig.savefig(file_name+'\\'+'delta_k_visc.png')
 
 fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
 dels.plot(s_ref,shape_d,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
-dels.plot(s_ref,full_model.shape_d(s_ref),label=r'D-G, Lam + Turb',color='#A4D65E')
+dels.plot(s_ref,full_model.shape_d(s_ref),label=r'D-G, Lam + Turb',color='#612D00')
 dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
-dels_err.plot(s_ref,np.abs(full_model.shape_d(s_ref)-shape_d)/shape_d,label=r'D-G, Lam + Turb',color='#A4D65E')
+dels_err.plot(s_ref,np.abs(full_model.shape_d(s_ref)-shape_d)/shape_d,label=r'D-G, Lam + Turb',color='#612D00')
 dels_err.legend(ncol=3,borderaxespad=-5.5)
 dels.set_ylabel(r'$H_d$')
 dels_err.set_yscale('log')
@@ -350,9 +354,9 @@ fig.savefig(file_name+'\\'+'shape_d_visc.png')
 
 fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
 dels.plot(s_ref,shape_k,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
-dels.plot(s_ref,full_model.shape_k(s_ref),label=r'D-G, Lam + Turb',color='#F2C75C')
+dels.plot(s_ref,full_model.shape_k(s_ref),label=r'D-G, Lam + Turb',color='#FF8400')
 dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
-dels_err.plot(s_ref,np.abs(full_model.shape_k(s_ref)-shape_k)/shape_k,label=r'D-G, Lam + Turb',color='#F2C75C')
+dels_err.plot(s_ref,np.abs(full_model.shape_k(s_ref)-shape_k)/shape_k,label=r'D-G, Lam + Turb',color='#FF8400')
 dels_err.legend(ncol=3,borderaxespad=-5.5)
 dels.set_ylabel(r'$H_k$')
 dels_err.set_yscale('log')
@@ -363,13 +367,13 @@ fig.savefig(file_name+'\\'+'shape_k_visc.png')
 
 
 cf_dg = full_model.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_inf**2)
-cD_dg = full_model.dissipation(s_ref,rho_inf)/(.5*rho_inf*u_inf**3)
+cD_dg = full_model.dissipation(s_ref,rho_inf)/(rho_inf*u_inf**3)
 
 fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
 dels.plot(s_ref,c_f,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
-dels.plot(s_ref,cf_dg,label=r'D-G, Lam + Turb',color='#F8E08E')
+dels.plot(s_ref,cf_dg,label=r'D-G, Lam + Turb',color='#818181')
 dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
-dels_err.plot(s_ref,abs(c_f-cf_dg)/abs(c_f),label=r'D-G, Lam + Turb',color='#F8E08E')
+dels_err.plot(s_ref,abs(c_f-cf_dg)/abs(c_f),label=r'D-G, Lam + Turb',color='#818181')
 dels.set_ylabel(r'$c_f$')
 dels_err.set_yscale('log')
 dels_err.set_ylabel('Relative Difference')
@@ -402,12 +406,12 @@ fig.savefig(file_name+'\\'+'n_tild_visc.png')
 
 fig, invprof = plt.subplots(constrained_layout=True)
 invprof.plot(s_ref,u_e_visc,label=r'Viscous',color='black',linestyle='--',linewidth=4.)
-invprof.plot(s_ref_inv,u_e_inv,label=r'Inviscid',color='#154734')
+invprof.plot(s_ref_inv,u_e_inv,label=r'Inviscid',color='#9FC9CD')
 
 function_corrections,preproc_ue = interaction_law(s_ref_inv,u_inf,u_e_inv,nu_inf,False,55)
 
-invprof.plot(s_ref_inv,u_e_inv+function_corrections[:len(u_e_inv)],label=r'Inv. + Int. Law',color='#154734',linestyle=':')
-invprof.plot(s_ref_inv,preproc_ue+function_corrections[:len(u_e_inv)],label=r'Preproc Inv. + Int. Law',color='#154734',linestyle='--')
+invprof.plot(s_ref_inv,u_e_inv+function_corrections[:len(u_e_inv)],label=r'Inv. + Int. Law',color='#9FC9CD',linestyle=':')
+invprof.plot(s_ref_inv,preproc_ue+function_corrections[:len(u_e_inv)],label=r'Preproc Inv. + Int. Law',color='#9FC9CD',linestyle='--')
 invprof.legend(borderaxespad=-9.5)
 invprof.set_ylim([15,24])
 invprof.set_ylabel(r'$u_e$ [m/s]')
@@ -504,9 +508,9 @@ fig.savefig(file_name+'\\'+'delta_d_inv_turb.png')
 
 fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
 dels.plot(temp_s_ref[temp_s_ref<=rtn.x_end],delta_m[transition_start_idx:endidx],label=r'XFOIL',linestyle='--',color='black',linewidth=4)
-dels.plot(temp_s_ref[temp_s_ref<=rtn.x_end],dg_turbulent.delta_m(temp_s_ref[temp_s_ref<=rtn.x_end]),label=r'D-G, Turb',color='#3A913F')
+dels.plot(temp_s_ref[temp_s_ref<=rtn.x_end],dg_turbulent.delta_m(temp_s_ref[temp_s_ref<=rtn.x_end]),label=r'D-G, Turb',color='#BB00FF')
 dels_err.plot(temp_s_ref[0],[-.1],linestyle='--',label='XFOIL',color='black')
-dels_err.plot(temp_s_ref[temp_s_ref<=rtn.x_end],np.abs(dg_turbulent.delta_m(temp_s_ref[temp_s_ref<=rtn.x_end])-delta_m[transition_start_idx:endidx])/delta_m[transition_start_idx:endidx],label=r'D-G, Turb',color='#3A913F')
+dels_err.plot(temp_s_ref[temp_s_ref<=rtn.x_end],np.abs(dg_turbulent.delta_m(temp_s_ref[temp_s_ref<=rtn.x_end])-delta_m[transition_start_idx:endidx])/delta_m[transition_start_idx:endidx],label=r'D-G, Turb',color='#BB00FF')
 dels_err.legend(ncol=3,borderaxespad=-5.5)
 dels.set_ylabel(r'$\delta_m$ [m]')
 dels_err.set_yscale('log')
@@ -557,10 +561,10 @@ fig.savefig(file_name+'\\'+'delta_d_inv.png')
 
 fig, (dels,dels_err) = plt.subplots(constrained_layout=True,nrows=2, ncols=1, sharex=True)
 dels.plot(s_ref,delta_m,label=r'XFOIL',linestyle='--',color='black',linewidth=4)
-dels.plot(s_ref[s_ref<=calcend],full_model.delta_m(s_ref[s_ref<=calcend]),label=r'D-G, Lam + Turb',color='#3A913F')
+dels.plot(s_ref[s_ref<=calcend],full_model.delta_m(s_ref[s_ref<=calcend]),label=r'D-G, Lam + Turb',color='#BB00FF')
 dels.set_ylim([0,1.2*max(delta_m)])
 dels_err.plot([0],[-.1],linestyle='--',label='XFOIL',color='black')
-dels_err.plot(s_ref[s_ref<=calcend],np.abs(full_model.delta_m(s_ref[s_ref<=calcend])-delta_m[:len(s_ref[s_ref<=calcend])])/delta_m[:len(s_ref[s_ref<=calcend])],label=r'D-G, Lam + Turb',color='#3A913F')
+dels_err.plot(s_ref[s_ref<=calcend],np.abs(full_model.delta_m(s_ref[s_ref<=calcend])-delta_m[:len(s_ref[s_ref<=calcend])])/delta_m[:len(s_ref[s_ref<=calcend])],label=r'D-G, Lam + Turb',color='#BB00FF')
 dels_err.legend(ncol=3,borderaxespad=-5.5)
 dels.set_ylabel(r'$\delta_m$ [m]')
 dels_err.set_yscale('log')
@@ -645,7 +649,7 @@ u_s = DrelaGilesTurbulentMOD._u_s(shape_km,re_delta_m,m_e_visc,True)
 cD_man2 = DrelaGilesTurbulentMOD._c_D(cf_man2,u_s,n_tild_ctau_sqrt**2,True)
 
 c_f = full_model.tau_w(s_ref,rho_inf)/(.5*rho_inf*u_inf**2)
-c_D = full_model.dissipation(s_ref,rho_inf)/(.5*rho_inf*u_inf**3)
+c_D = full_model.dissipation(s_ref,rho_inf)/(rho_inf*u_inf**3)
 
 tmp1 = np.abs(c_f - c_f)/c_f
 tmp2 = np.abs(c_D - c_D)/c_D

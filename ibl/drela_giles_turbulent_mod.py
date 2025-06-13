@@ -23,13 +23,14 @@ import time
 
 class DrelaGilesTurbulentMOD(IBLMethod):
     """
-    Models a turbulent bondary layer using the Drela Giles model (1986).
+    Models a laminar bondary layer using the Drela-Giles model: 
+
+    original relations from 1986 and modern relations from XFOIL.
+
+    References to equation numbers come from Jeffrey Azuma's Master's Thesis: Enhacement of a Python Integral Boundary Layer Method
 
     Solves the system of ODEs from Drela Giles method when provided the edge
     velocity profile and other configuration information. This method employs the turbulent closure functions.
-
-    References to equation numbers come from the paper by M. Drela and M. Giles: (1986)
-    Viscous-inviscid analysis of transonic and low Reynolds number airfoils (1986)
     """
 
     # Requires nu, u_e, du_edx, M_e and dM_edx
@@ -557,19 +558,19 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _mach(u_e: InputParam,t_air: InputParam,R_air: InputParam,gamma: InputParam) -> InputParam: # the conversion between velocity and mach number
-        'Add description here'
+        'Local Edge Mach Number, Equation 2.1'
         a = np.sqrt(gamma*R_air*t_air)
         return u_e/a
     
     @staticmethod
     def _dme_dx(du_e: InputParam,t_air: InputParam,R_air: InputParam,gamma: InputParam) -> InputParam:
-        "Streamwise Derivative of Local Edge Mach Number"
+        "Streamwise Derivative of Local Edge Mach Number: Equation 2.7"
         dme_dx = 1/np.sqrt(gamma*R_air*t_air)*du_e
         return dme_dx
 
     @staticmethod
     def _shape_km(shape_d:InputParam,m_e:InputParam) -> InputParam:
-        "Kinematic Shape Factor: Equation 15"
+        "Kinematic Shape Factor: Equation 1.34"
         temp = shape_d - .29*m_e**2
         return temp/(1.+.113*m_e**2)
 
@@ -586,7 +587,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _fc(m_e: InputParam, src: InputParam, gamma: InputParam) -> InputParam:
-        'Term used for finding Skin Friction Coefficient: Equation 21'
+        'Term used for finding Skin Friction Coefficient: Equation A.8a, B.9c'
         if src:
             return np.sqrt(1. + .5*(gamma - 1.)*m_e**2)
         else:
@@ -594,7 +595,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
     
     @staticmethod
     def _shape_den(shape_km: InputParam, m_e: InputParam) -> InputParam:  # eq 19
-        'Density Shape Factor: Equation 19'
+        'Density Shape Factor: Equation 1.33'
         return (0.064/(shape_km - 0.8) + 0.251)*m_e**2
     
     @staticmethod
@@ -604,7 +605,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _u_s(shape_km:InputParam,re_delta_m:InputParam,m_e:InputParam,src:InputParam) -> InputParam:
-        'Normalized Wall Slip Velocity: Equation 27'
+        'Normalized Wall Slip Velocity: Equation A.9b, B.10b'
         shape_k = DrelaGilesTurbulentMOD._shape_k(shape_km,re_delta_m,src,m_e)
         shape_d = DrelaGilesTurbulentMOD._shape_d(shape_km,m_e)
         if src:
@@ -614,7 +615,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _c_tau_eq(shape_km:InputParam,re_delta_m:InputParam,m_e:InputParam,src:InputParam) -> InputParam:
-        'Equilibrium Shear Stress Coefficient: Equation 30'
+        'Equilibrium Shear Stress Coefficient: Equation 1.40b, B.5'
         shape_k = DrelaGilesTurbulentMOD._shape_k(shape_km,re_delta_m,src,m_e)
         shape_d = DrelaGilesTurbulentMOD._shape_d(shape_km,m_e)
         u_s     = DrelaGilesTurbulentMOD._u_s(shape_km,re_delta_m,m_e,src)
@@ -629,11 +630,12 @@ class DrelaGilesTurbulentMOD(IBLMethod):
     
     @staticmethod
     def _dc_tau_dx(c_tau:InputParam,c_tau_eq:InputParam,delta:InputParam) -> InputParam:
-        'Streamwise Derivative of Shear Stress Coefficient: Equation 28'
+        'Streamwise Derivative of Shear Stress Coefficient: Equation 1.40a'
         return 4.2*(c_tau/delta)*(np.sqrt(c_tau_eq) - np.sqrt(c_tau))
     
     @staticmethod
     def _dc_tau_dx_src(ct_sqrt:InputParam, delta_d:InputParam, delta:InputParam, shape_km:InputParam, re_delta_m:InputParam, m_e:InputParam, u_e:InputParam, du_e_dx:InputParam, gamma:InputParam) -> InputParam:
+        'Modern (found in XFOIL) Streamwise Derivative of Shear Stress Coefficient: Equation 2.16'
         h_kc = shape_km - 1. - 18./re_delta_m
         src = True #This relation is explicitly the 'new' equation (from the sourcecode)
         fc = DrelaGilesTurbulentMOD._fc(m_e,src,gamma)
@@ -648,7 +650,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _delta(delta_m:InputParam,shape_km:InputParam,m_e:InputParam) -> InputParam:
-        'Boundary Layer Thickness: Equation 29'
+        'Boundary Layer Thickness: Equation 1.40d'
         shape_d = DrelaGilesTurbulentMOD._shape_d(shape_km,m_e)
         delta_d = delta_m*shape_d
 
@@ -661,7 +663,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _c_f_dg(shape_km: InputParam, re_delta_m: InputParam, fc:InputParam, src:InputParam) -> npt.NDArray:
-        'Skin Friction Coefficient: Equation 20'
+        'Skin Friction Coefficient: Equation A.8, B.9'
         if not isinstance(shape_km,np.ndarray):
             shape_km = np.asarray(shape_km) #needed this line to declare that everthing is treated as array
         shape_km[abs(shape_km) > 1e9] = 1e9
@@ -707,7 +709,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
     @staticmethod
     def _ddelta_m_dx(delta_m: InputParam, shape_km: InputParam, re_delta_m: InputParam, m_e: InputParam, 
                      u_e: InputParam, du_e_dx: InputParam, src: InputParam, gamma: InputParam) -> InputParam:
-        'Streamwise Derivative of the Momentum Thickness: Equation 10'
+        'Streamwise Derivative of the Momentum Thickness: Equation 1.27'
         fc = DrelaGilesTurbulentMOD._fc(m_e,src,gamma)
         c_f = DrelaGilesTurbulentMOD._c_f_dg(shape_km,re_delta_m,fc,src)  # eq 17
         shape_d = DrelaGilesTurbulentMOD._shape_d(shape_km, m_e)
@@ -716,12 +718,12 @@ class DrelaGilesTurbulentMOD(IBLMethod):
     
     @staticmethod
     def _shape_d(shape_km: InputParam, m_e: InputParam) -> InputParam:
-        'Displacement Shape Factor as a Function of Kinematic Shape Factor and Edge Mach Number: Equation 15'
+        'Displacement Shape Factor as a Function of Kinematic Shape Factor and Edge Mach Number: Equation 1.34 Rearranged'
         return shape_km*(1+0.113*m_e**2) + 0.29*m_e**2
 
     @staticmethod
     def _dshape_k_dre_m(shape_km:InputParam,re_delta_m:InputParam,src:InputParam, m_e:InputParam) -> InputParam:
-        'Kinetic Energy Shape Factor Derivative with respect to Momentum Thickness Reynolds Number'
+        'Kinetic Energy Shape Factor Derivative with respect to Momentum Thickness Reynolds Number: Equation A.7, B.8'
 
         if not isinstance(shape_km,np.ndarray):
             shape_km = np.asarray([shape_km])
@@ -794,7 +796,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _shape_k(shape_km: InputParam,re_delta_m: InputParam, src:InputParam, m_e) -> npt.NDArray:
-        'Kinetic Energy Shape Factor: Equation 24'
+        'Kinetic Energy Shape Factor: Equation A.5, B.6'
         if not isinstance(shape_km,np.ndarray):
             shape_km = np.asarray([shape_km])
         if not isinstance(re_delta_m,np.ndarray):
@@ -934,7 +936,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _c_D(c_f: InputParam, u_s: InputParam, c_tau: InputParam, src: InputParam) -> npt.NDArray:
-        'Dissipation Coefficient: Equation 26'
+        'Dissipation Coefficient: Equation A.9, B.10'
         u_s = np.asarray(u_s)
 
         if src:
@@ -944,7 +946,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
 
     @staticmethod
     def _dshape_k_dshape_km(shape_km: InputParam,re_delta_m: InputParam,src: InputParam,m_e: InputParam) -> npt.NDArray:
-        'Kinetic Energy Shape Factor Derivative with respect to Kinematic Shape Factor'
+        'Kinetic Energy Shape Factor Derivative with respect to Kinematic Shape Factor: Equation A.6, B.7'
         if not isinstance(shape_km,np.ndarray):
             shape_km = np.asarray([shape_km])
         if not isinstance(re_delta_m,np.ndarray):
@@ -1011,6 +1013,7 @@ class DrelaGilesTurbulentMOD(IBLMethod):
     def _dshape_k_dx(delta_m: InputParam, shape_km: InputParam, u_e: InputParam, du_e: InputParam, m_e: InputParam, re_delta_m: InputParam, c_tau: InputParam, src:InputParam, gamma:InputParam) -> InputParam:
         # dH*/dxi, eq 11
         # requires delta_m, shape_ke, H**, u_e, du_e, CD, C_f, shape_d
+        'Streamwise Derivative of Kinetic Energy Shape Factor: Equation 1.28'
         fc = DrelaGilesTurbulentMOD._fc(m_e,src,gamma)
         c_f = DrelaGilesTurbulentMOD._c_f_dg(shape_km, re_delta_m,fc,src)
         shape_den = DrelaGilesTurbulentMOD._shape_den(shape_km, m_e)
@@ -1023,9 +1026,6 @@ class DrelaGilesTurbulentMOD(IBLMethod):
         temp1 = 2*c_D - 0.5*shape_k*c_f
         temp2 = (2*shape_den + shape_k*(1 - shape_d))*delta_m*du_e/u_e
         return (1/delta_m)*(temp1 - temp2)
-        #TODO so as a joke...
-        #return (1/delta_m)*(temp1 - temp2)/(np.exp(shape_k))
-        #return (1/delta_m)*(temp1 - temp2)/(shape_k)
 
 
 class _DrelaGilesSeparationEvent(TermEvent):

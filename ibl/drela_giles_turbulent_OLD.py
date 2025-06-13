@@ -15,11 +15,11 @@ from ibl.ibl_method import IBLMethod
 from ibl.ibl_method import TermReason
 from ibl.ibl_method import TermEvent
 from ibl.initial_condition import ManualCondition
-from ibl.initial_condition import FalknerSkanStagCondition
+#from ibl.initial_condition import FalknerSkanStagCondition
 from ibl.typing import InputParam
 
 
-class DrelaGilesTurbulent(IBLMethod):
+class DrelaGilesTurbulent_OLD(IBLMethod):
     """
     Models a turbulent bondary layer using the Drela Giles model (1986).
 
@@ -44,9 +44,6 @@ class DrelaGilesTurbulent(IBLMethod):
         self.R_air = R_air
         self.gamma = gamma
         self.set_separation_event(self.u_e,cf_crit)
-
-    #TODO Imported setters for turbulent model, reasoning being that its functionality in the greater structure
-    # of PyBL (like the transition coupler) means that it should prioritize manual inputs of boundary layer ICs
 
     @property
     def initial_delta_m(self) -> float:
@@ -79,9 +76,7 @@ class DrelaGilesTurbulent(IBLMethod):
     # The separation event is the same
     def set_separation_event(self, u_e:Callable[[InputParam],npt.NDArray], cf_crit: float) -> None:
         """
-        Set the cf value for flow separation.
-
-        ADD TEXT HERE
+        Set the cf value for flow separation, along with other needed variables
 
         Parameters
         ----------
@@ -174,7 +169,7 @@ class DrelaGilesTurbulent(IBLMethod):
         if self._solution is None:
             raise ValueError("No valid solution.")
         temp = self.shape_k(x)
-        return self._solution(x)[0]/temp
+        return self._solution(x)[0]*temp
 
     @override
     def shape_d(self, x: InputParam) -> npt.NDArray:
@@ -389,17 +384,17 @@ class DrelaGilesTurbulent(IBLMethod):
     @staticmethod
     def _u_s(shape_km:InputParam,re_delta_m:InputParam,m_e:InputParam) -> InputParam:
         'Add description here'
-        shape_k = DrelaGilesTurbulent._shape_k(shape_km,re_delta_m)
-        shape_d = DrelaGilesTurbulent._shape_d(shape_km,m_e)
+        shape_k = DrelaGilesTurbulent_OLD._shape_k(shape_km,re_delta_m)
+        shape_d = DrelaGilesTurbulent_OLD._shape_d(shape_km,m_e)
 
         return (shape_k/2)*(1. - 4./3. * (shape_km-1)/shape_d)
 
     @staticmethod
     def _c_tau_eq(shape_km:InputParam,re_delta_m:InputParam,m_e:InputParam) -> InputParam:
         'Add description here'
-        shape_k = DrelaGilesTurbulent._shape_k(shape_km,re_delta_m)
-        shape_d = DrelaGilesTurbulent._shape_d(shape_km,m_e)
-        u_s     = DrelaGilesTurbulent._u_s(shape_km,re_delta_m,m_e)
+        shape_k = DrelaGilesTurbulent_OLD._shape_k(shape_km,re_delta_m)
+        shape_d = DrelaGilesTurbulent_OLD._shape_d(shape_km,m_e)
+        u_s     = DrelaGilesTurbulent_OLD._u_s(shape_km,re_delta_m,m_e)
 
         return shape_k*(.015/(1.-u_s))*(shape_km-1.)**3/(shape_d*shape_km**2)
     
@@ -411,7 +406,7 @@ class DrelaGilesTurbulent(IBLMethod):
     @staticmethod
     def _delta(delta_m:InputParam,shape_km:InputParam,m_e:InputParam) -> InputParam:
         'Add description here'
-        shape_d = DrelaGilesTurbulent._shape_d(shape_km,m_e)
+        shape_d = DrelaGilesTurbulent_OLD._shape_d(shape_km,m_e)
         delta_d = delta_m*shape_d
         return delta_m*(3.15 + 1.72/(shape_km-1.)) + delta_d
 
@@ -433,9 +428,9 @@ class DrelaGilesTurbulent(IBLMethod):
     @staticmethod
     def _ddelta_m_dx(delta_m: InputParam, shape_km: InputParam, re_delta_m: InputParam, m_e: InputParam, u_e: InputParam, du_e_dx: InputParam) -> InputParam:
         'Add description here'
-        fc = DrelaGilesTurbulent._fc(m_e)
-        c_f = DrelaGilesTurbulent._c_f_dg(shape_km,re_delta_m,fc)  # eq 17
-        shape_d = DrelaGilesTurbulent._shape_d(shape_km, m_e)
+        fc = DrelaGilesTurbulent_OLD._fc(m_e)
+        c_f = DrelaGilesTurbulent_OLD._c_f_dg(shape_km,re_delta_m,fc)  # eq 17
+        shape_d = DrelaGilesTurbulent_OLD._shape_d(shape_km, m_e)
         return c_f/2 - (2+shape_d-m_e**2)*(delta_m/u_e)*du_e_dx
     
     @staticmethod
@@ -552,15 +547,15 @@ class DrelaGilesTurbulent(IBLMethod):
     def _dshape_k_dx(delta_m: InputParam, shape_km: InputParam, u_e: InputParam, du_e: InputParam, m_e: InputParam, re_delta_m: InputParam, c_tau: InputParam) -> InputParam:
         # dH*/dxi, eq 11
         # requires delta_m, shape_ke, H**, u_e, du_e, CD, C_f, shape_d
-        fc = DrelaGilesTurbulent._fc(m_e)
-        c_f = DrelaGilesTurbulent._c_f_dg(shape_km, re_delta_m,fc)
-        shape_den = DrelaGilesTurbulent._shape_den(shape_km, m_e)
-        shape_k = DrelaGilesTurbulent._shape_k(shape_km,re_delta_m)
-        shape_d = DrelaGilesTurbulent._shape_d(shape_km, m_e)
+        fc = DrelaGilesTurbulent_OLD._fc(m_e)
+        c_f = DrelaGilesTurbulent_OLD._c_f_dg(shape_km, re_delta_m,fc)
+        shape_den = DrelaGilesTurbulent_OLD._shape_den(shape_km, m_e)
+        shape_k = DrelaGilesTurbulent_OLD._shape_k(shape_km,re_delta_m)
+        shape_d = DrelaGilesTurbulent_OLD._shape_d(shape_km, m_e)
         u_e = np.asarray(u_e) #Avoids divide by zero errors
         u_e[abs(u_e) < 1e-9] = 1e-9
-        u_s = DrelaGilesTurbulent._u_s(shape_km,re_delta_m,m_e)
-        c_D = DrelaGilesTurbulent._c_D(c_f,u_s,c_tau)
+        u_s = DrelaGilesTurbulent_OLD._u_s(shape_km,re_delta_m,m_e)
+        c_D = DrelaGilesTurbulent_OLD._c_D(c_f,u_s,c_tau)
         temp1 = 2*c_D - 0.5*shape_k*c_f
         temp2 = (2*shape_den + shape_k*(1 - shape_d))*delta_m*du_e/u_e
         return (1/delta_m)*(temp1 - temp2)
@@ -622,9 +617,9 @@ class _DrelaGilesSeparationEvent(TermEvent):
         u_e = self._u_e(x)
         re_delta_m = u_e*f[0]/self._nu
 
-        m_e = DrelaGilesTurbulent._mach(u_e,self._T_air,self._R_air,self._gamma)
-        fc = DrelaGilesTurbulent._fc(m_e)
-        current_cf = DrelaGilesTurbulent._c_f_dg(shape_km,re_delta_m,fc)
+        m_e = DrelaGilesTurbulent_OLD._mach(u_e,self._T_air,self._R_air,self._gamma)
+        fc = DrelaGilesTurbulent_OLD._fc(m_e)
+        current_cf = DrelaGilesTurbulent_OLD._c_f_dg(shape_km,re_delta_m,fc)
         return float(current_cf - self._cf_crit)
 
     @override

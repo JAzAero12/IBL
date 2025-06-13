@@ -20,14 +20,14 @@ from ibl.typing import InputParam
 
 from scipy.optimize import minimize
 
-#TODO replace equation number with my thesis equation numbers. One day.
+
 class DrelaGilesLaminarMOD(IBLMethod):
     """
     Models a laminar bondary layer using the Drela-Giles model: 
 
     original relations from 1986 and modern relations from XFOIL.
 
-    References to equation numbers come from the paper Enhacement of a Python Integral Boundary Layer Method
+    References to equation numbers come from Jeffrey Azuma's Master's Thesis: Enhacement of a Python Integral Boundary Layer Method
 
     Solves the system of ODEs from Drela Giles method when provided the edge
     velocity profile and other configuration information. This method employs the laminar closure functions.
@@ -422,13 +422,13 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _shape_km(shape_d:InputParam,m_e:InputParam) -> InputParam:
-        "Kinematic Shape Factor: Equation 1.29"
+        "Kinematic Shape Factor: Equation 1.34"
         temp = shape_d - .29*m_e**2
         return temp/(1.+.113*m_e**2)
 
     @staticmethod
     def _dme_dx(du_e: InputParam,t_air: InputParam,R_air: InputParam,gamma: InputParam) -> InputParam:
-        "Streamwise Derivative of Local Edge Mach Number: Equation 2.6"
+        "Streamwise Derivative of Local Edge Mach Number: Equation 2.7"
         dme_dx = 1/np.sqrt(gamma*R_air*t_air)*du_e
         return dme_dx
 
@@ -465,7 +465,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _n_tild_ramp_cust(ratio:InputParam, src:InputParam) -> InputParam:
-        'Logistic Function for n_tilde values to replicate cubic ramp of XFOIL source code, Equation 2.11'
+        'Logistic Function for n_tilde values to replicate cubic ramp of XFOIL source code, Equation 2.12'
         if not src:
             k = 20 #OLD, KEEP
         else:
@@ -476,14 +476,14 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _mach(u_e: InputParam,t_air: InputParam,R_air: InputParam,gamma: InputParam) -> InputParam: # the conversion between velocity and mach number
-        'Local Edge Mach Number'
+        'Local Edge Mach Number, Equation 2.1'
         a = np.sqrt(gamma*R_air*t_air)
         return u_e/a
         #return np.zeros_like(u_e)
     
     @staticmethod
     def _shape_den(shape_km: InputParam, m_e: InputParam) -> InputParam:  # eq 19
-        'Density Shape Factor: Equation 1.28'
+        'Density Shape Factor: Equation 1.33'
         return (0.064/(shape_km - 0.8) + 0.251)*m_e**2
     
     @staticmethod
@@ -493,7 +493,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _crit_re_m_log(shape_km:InputParam) -> InputParam:
-        'Critical Momentum Thickness Reynolds Number, Equation 1.32'
+        'Critical Momentum Thickness Reynolds Number, Equation 1.38'
         temp1 = 1.415/(shape_km-1.) -.489
         temp2 = temp1*np.tanh(20./(shape_km-1.) -12.9)
         temp  = temp2 + 3.295/(shape_km-1.)+.44
@@ -508,17 +508,17 @@ class DrelaGilesLaminarMOD(IBLMethod):
         
     @staticmethod
     def _d_ntild_dre_m(shape_km: InputParam) -> InputParam:
-        'n_tilde Derivative with respect to Momentum Thickness Reynolds Number: Equation 1.31'
+        'n_tilde Derivative with respect to Momentum Thickness Reynolds Number: Equation 1.37'
         return 0.01 * np.sqrt((2.4*shape_km - 3.7 + 2.5*np.tanh(1.5*shape_km - 4.65))**2 + 0.25)
     
     @staticmethod
     def _lfunc(shape_km: InputParam) -> InputParam:
-        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 1.34b'
+        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 1.39c'
         return (6.54*shape_km - 14.07)/shape_km**2
 
     @staticmethod
     def _mfunc(shape_km: InputParam) -> InputParam:
-        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 1.34a'
+        'Empirical Relation Function used in n_tilde Streamwise Derivative: Equation 1.39b'
         lfunc = DrelaGilesLaminarMOD._lfunc(shape_km)
         return (0.058*((shape_km - 4)**2)/(shape_km - 1) - 0.068)*(1/lfunc)
     
@@ -581,7 +581,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
 
     @staticmethod
     def _ddelta_m_dx(delta_m: InputParam, shape_km: InputParam, m_e: InputParam, u_e: InputParam, du_e_dx: InputParam, c_f: InputParam) -> InputParam:
-        'Streamwise Derivative of Momentum Thickness: Equation 1.25'
+        'Streamwise Derivative of Momentum Thickness: Equation 1.27'
         shape_d = DrelaGilesLaminarMOD._shape_d(shape_km, m_e)
         u_e = np.asarray(u_e) #Avoids divide by zero errors
         u_e[abs(u_e) < 1e-9] = 1e-9
@@ -589,7 +589,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
     
     @staticmethod
     def _shape_d(shape_km: InputParam, m_e: InputParam) -> InputParam:
-        'Displacement Shape Factor as a function of Kinematic Shape Factor and Local Edge Mach Number: Equation 1.29 Rearranged'
+        'Displacement Shape Factor as a function of Kinematic Shape Factor and Local Edge Mach Number: Equation 1.34 Rearranged'
         return shape_km*(1.+0.113*m_e**2) + 0.29*m_e**2
 
     @staticmethod
@@ -693,7 +693,7 @@ class DrelaGilesLaminarMOD(IBLMethod):
     @staticmethod
     def _dshape_k_dx(delta_m: InputParam, shape_km: InputParam, u_e: InputParam, 
                      du_e: InputParam, m_e: InputParam, re_delta_m: InputParam, c_f: InputParam, src: InputParam) -> InputParam:
-        'Streamwise Derivative of Kinetic Energy Shape Factor: Equation 1.26'
+        'Streamwise Derivative of Kinetic Energy Shape Factor: Equation 1.28'
         shape_den = DrelaGilesLaminarMOD._shape_den(shape_km, m_e)
         shape_k = DrelaGilesLaminarMOD._shape_k(shape_km,src)
         c_D = DrelaGilesLaminarMOD._c_D(shape_k=shape_k,shape_km=shape_km,re_delta_m=re_delta_m,src=src)

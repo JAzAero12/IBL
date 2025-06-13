@@ -19,7 +19,7 @@ from ibl.initial_condition import FalknerSkanStagCondition
 from ibl.typing import InputParam
 
 
-class DrelaGilesLaminar(IBLMethod):
+class DrelaGilesLaminar_OLD(IBLMethod):
     """
     Models a laminar bondary layer using the Drela Giles model (1986).
 
@@ -32,7 +32,7 @@ class DrelaGilesLaminar(IBLMethod):
                  dU_edx: Optional[Any] = None, d2U_edx2: Optional[Any] = None, #M_e: Optional[Any] = None,
                  #dM_edx: Optional[Any] = None,
                  T_air: float = 288.15, R_air: float = 287., gamma: float = 1.4,
-                 n_tilde_crit: float = 9, cf_crit: float = 0, ic = None, steptol:float = 2.e-15) -> None:
+                 n_tilde_crit: float = 9, cf_crit: float = 0, ic = None) -> None:
                  #n_tilde_init: float = 0) -> None:
         if ic is None:
             ic = FalknerSkanStagCondition(u_e=1,du_e=1,nu=nu)
@@ -59,6 +59,7 @@ class DrelaGilesLaminar(IBLMethod):
         self.switch_loc = 0
         self.flag = 0
         #self.u_e_flag = 0
+        #self.u_inf = u_inf
 
     def set_n_tilde_critical(self, n_tilde_crit: float) -> None:
         """
@@ -168,7 +169,7 @@ class DrelaGilesLaminar(IBLMethod):
         if self._solution is None:
             raise ValueError("No valid solution.")
         temp = self.shape_k(x)
-        return self._solution(x)[0]/temp
+        return temp*self._solution(x)[0]
 
     @override
     def shape_d(self, x: InputParam) -> npt.NDArray:
@@ -192,7 +193,6 @@ class DrelaGilesLaminar(IBLMethod):
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         shape_d = self._shape_d(shape_km,m_e)
         return np.array(shape_d) # eq 15
-        #return shape_km #TODO FOR DEBUGGING
 
     @override
     def shape_k(self, x: InputParam) -> npt.NDArray:
@@ -235,12 +235,23 @@ class DrelaGilesLaminar(IBLMethod):
         if self._solution is None:
             raise ValueError("No valid solution.")
 
-        delta_m = self._solution(x)[0]
         u_e = self.u_e(x)
+        #if self.u_inf == None:
+        #    u_u_e_ratio = 1.
+        #else:
+        #    u_u_e_ratio = u_e/self.u_inf
+        #    u_u_e_ratio[u_u_e_ratio>1.] = 1.
+        #
+        #du_e_dx = self.du_e(x)
+        #
+        #neg_flag = [num < 0 for num in du_e_dx]
+        #neg_flag = np.array(neg_flag)
+        delta_m = self._solution(x)[0]
         u_e[np.abs(u_e) < 0.001] = 0.001
         re_delta_m = u_e*delta_m/self._nu
         c_f = self._c_f_dg(self._solution(x)[1],re_delta_m) # eq 17
         return 0.5*rho*u_e**2*c_f
+        #return c_f
         #return self._solution(x)[2] #FOR DEBUGGING
 
     @override
@@ -270,7 +281,8 @@ class DrelaGilesLaminar(IBLMethod):
         re_delta_m = u_e*delta_m/self._nu
 
         c_D = self._c_D(shape_km,shape_k,re_delta_m) # eq 18
-
+        # For DEBUGGING
+        #return c_D
         return .5*c_D*rho*u_e**3
 
     @override
@@ -317,19 +329,27 @@ class DrelaGilesLaminar(IBLMethod):
         f_p = np.zeros_like(f)
         u_e = self.u_e(x)
         du_e_dx = self.du_e(x)
-
+        #if du_e_dx < 0:
+            #pass
+        #else:
+        #    neg_flag = False
         delta_m = f[0]
         shape_km = f[1]
         #n_tilde = f[2]
 
+        #if self.u_inf == None:
+        #    u_u_e_ratio = 1.
+        #else:
+        #    u_u_e_ratio = u_e/self.u_inf
+        #    if u_u_e_ratio > 1.:
+        #        u_u_e_ratio = 1.
+
         re_delta_m = u_e*delta_m/self._nu
         m_e = self._mach(u_e,self.t_air,self.R_air,self.gamma)
         c_f = self._c_f_dg(shape_km,re_delta_m)
-        #if u_e == self.u_e_flag: #TODO why?
-            #c_f = .5*c_f
         dshape_k_dx = self._dshape_k_dx(delta_m, shape_km, u_e, du_e_dx, m_e, re_delta_m,c_f)  # eq 11
         dshape_k_dre_m = self._dshape_k_dre_m()  # should be 0 for laminar
-        ddelta_m_dx = self._ddelta_m_dx(delta_m, shape_km, re_delta_m, m_e, u_e, du_e_dx, c_f)  # eq 10
+        ddelta_m_dx = self._ddelta_m_dx(delta_m, shape_km, m_e, u_e, du_e_dx, c_f)  # eq 10
         dre_m_dx = self._dre_m_dx(u_e, delta_m, du_e_dx, ddelta_m_dx, self._nu)
         dshape_k_dshape_km = self._dshape_k_dshape_km(shape_km)
         d_ntild_dre_m = self._d_ntild_dre_m(shape_km)  # eq 35
@@ -337,18 +357,27 @@ class DrelaGilesLaminar(IBLMethod):
         l_Hk = self._lfunc(shape_km) # eq 39
         f_p[0] = ddelta_m_dx
         f_p[1] = (dshape_k_dx - dshape_k_dre_m*dre_m_dx)/dshape_k_dshape_km  # d_Hk_xi
+        #if du_e_dx < 0: #TODO something in spirit to this? related to sensitivity data collection that XFOIL does?
+        #    if abs(du_e_dx) > .8:
+        #        f_p[1] = 1./(abs(du_e_dx)) * f_p[1]
+        #    else:
+        #        f_p[1] = abs(du_e_dx) * f_p[1]
         re_crit_log = self._crit_re_m_log(shape_km)
 
         if isinstance(re_delta_m,(int,float)): #This ensures that any array post processing doesn't get caught up
             bound = 1 #pulled from XFOIL
-            if np.log10(abs(re_delta_m))/re_crit_log > -1*bound:
-                if np.log10(abs(re_delta_m))/re_crit_log < bound:
-                    const = self._n_tild_linear_ramp_cust(np.log10(abs(re_delta_m))/re_crit_log,bound) #TODO change to logistic function
-                else:
-                    const = 1.0
+            #if np.log10(abs(re_delta_m))/re_crit_log > -1*bound:
+            if True:
+                #const = self._n_tild_ramp_cust(np.log10(abs(re_delta_m))/re_crit_log-1)
+                #if np.log10(abs(re_delta_m))/re_crit_log < bound:
+                #    const = self._n_tild_ramp_cust(np.log10(abs(re_delta_m))/re_crit_log,bound) #TODO change to logistic function
+                #else:
+                #    const = 1.0
                 if np.log10(abs(re_delta_m)) < re_crit_log: #Abs vals the first few re values
                     f_p[2] = 0
                 else:
+                    const = self._n_tild_ramp_cust(np.log10(abs(re_delta_m))/re_crit_log-1)
+                    #print(const)
                     f_p[2] = const*d_ntild_dre_m*((m_Hk + 1)/2) * l_Hk * (1/f[0])  # d_ntildae_xi
 
             #if np.log10(abs(re_delta_m)) < re_crit_log: #Abs vals the first few re values
@@ -375,6 +404,11 @@ class DrelaGilesLaminar(IBLMethod):
             #    f_p[2] = err_scal*const*d_ntild_dre_m*((m_Hk + 1)/2) * l_Hk * (1/f[0])  # d_ntildae_xi
         pass
         self.xvec = np.append(self.xvec,x)
+        #print('~~~~~~~~~~~~~~')
+        #print(f)
+        #print(f_p)
+        #print('~~~~~~~~~~~~~~')
+        #print(x)
         return f_p
 
     @staticmethod
@@ -393,11 +427,10 @@ class DrelaGilesLaminar(IBLMethod):
         return rfac
 
     @staticmethod
-    def _n_tild_linear_ramp_cust(ratio:InputParam,bound:InputParam) -> InputParam:
+    def _n_tild_ramp_cust(ratio:InputParam) -> InputParam:
         'Logistic Function'
-        k=5.
-        shift = bound
-        scal = 1./(1.+np.exp(-1*k*(ratio-shift)))
+        k=20
+        scal = 1./(1.+np.exp(-1*k*(ratio)+2))
         return scal
 
 
@@ -446,7 +479,7 @@ class DrelaGilesLaminar(IBLMethod):
     @staticmethod
     def _mfunc(shape_km: InputParam) -> InputParam:
         'Add description here'
-        lfunc = DrelaGilesLaminar._lfunc(shape_km)
+        lfunc = DrelaGilesLaminar_OLD._lfunc(shape_km)
         return (0.058*((shape_km - 4)**2)/(shape_km - 1) - 0.068)*(1/lfunc)
     
     @staticmethod
@@ -457,6 +490,20 @@ class DrelaGilesLaminar(IBLMethod):
         shape_km[shape_km < 1e-9] = 1e-9
         re_delta_m = np.asarray(re_delta_m) #Avoids divide by zero errors
         re_delta_m[abs(re_delta_m) < 1e-9] = 1e-9
+        #TODO trying out a scaling method for c_f
+        #scalefactor = np.ones_like(u_u_e_ratio)
+        #if isinstance(u_u_e_ratio,np.ndarray):
+        #    for i, neg in enumerate(neg_flag):
+        #        if neg:
+        #            pass
+        #        else:
+        #            scalefactor[i] = u_u_e_ratio[i]
+        #else:
+        #    if neg_flag: #Removing decreasing velocity case (towards TE)
+        #        scalefactor = 1.
+        #    else: #Focusing on the LE, where there is a slow velocity/stagnation point
+        #        scalefactor = u_u_e_ratio
+
         def lam_fric_low(shape_km: InputParam) -> InputParam:
             temp =  -0.067 + 0.01977*(7.4-shape_km)**2./(shape_km - 1.)
             return (2/re_delta_m)*temp
@@ -478,10 +525,9 @@ class DrelaGilesLaminar(IBLMethod):
         #return np.piecewise(shape_km, [shape_km <= 5.5, shape_km > 5.5], [lam_fric_low, lam_fric_high]) #not sure what's wrong
 
     @staticmethod
-    def _ddelta_m_dx(delta_m: InputParam, shape_km: InputParam, re_delta_m: InputParam, m_e: InputParam, u_e: InputParam, du_e_dx: InputParam, c_f: InputParam) -> InputParam:
+    def _ddelta_m_dx(delta_m: InputParam, shape_km: InputParam, m_e: InputParam, u_e: InputParam, du_e_dx: InputParam, c_f: InputParam) -> InputParam:
         'Add description here'
-        #c_f = DrelaGilesLaminar._c_f_dg(shape_km,re_delta_m)  # eq 17
-        shape_d = DrelaGilesLaminar._shape_d(shape_km, m_e)
+        shape_d = DrelaGilesLaminar_OLD._shape_d(shape_km, m_e)
         return c_f/2. - (2.+shape_d-m_e**2.)*(delta_m/u_e)*du_e_dx
     
     @staticmethod
@@ -495,30 +541,33 @@ class DrelaGilesLaminar(IBLMethod):
         return 0
 
     @staticmethod
-    def _shape_k(shape_km: InputParam) -> npt.NDArray:
+    def _shape_k(shape_km: InputParam,src=False) -> npt.NDArray:
         'Add description here'
 
         shape_km = np.asarray(shape_km)
 
         shape_km[shape_km > 1.84e19] = 1.84e19
         shape_km[abs(shape_km) < 1e-9] = 1e-9
-        def lam_Hk_low(shape_km: InputParam) -> InputParam:
-            return  1.515 + 0.076*((4. - shape_km)**2)/shape_km
+        #DEBUGGING
+        #src = True
+        #DEBUGGING
+        if not src:
+            def lam_Hk_low(shape_km: InputParam) -> InputParam:
+                return  1.515 + 0.076*((4. - shape_km)**2)/shape_km
 
-        def lam_Hk_high(shape_km: InputParam) -> InputParam:
-            return  1.515 + 0.040*((shape_km - 4.)**2)/shape_km
+            def lam_Hk_high(shape_km: InputParam) -> InputParam:
+                return  1.515 + 0.040*((shape_km - 4.)**2)/shape_km
 
-        return np.piecewise(shape_km, [shape_km <= 4., shape_km > 4.], [lam_Hk_low, lam_Hk_high])
-        
-        #TODO comes directly from sourcecode
-        #def lam_Hk_low(shape_km: InputParam) -> InputParam:
-        #    tmp = shape_km - 4.35
-        #    return  .0111*tmp**2/(shape_km+1.) - .0278*tmp**3/(shape_km+1.) + 1.528 - .0002*(tmp*shape_km)**2
-        #
-        #def lam_Hk_high(shape_km: InputParam) -> InputParam:
-        #    return .015*(shape_km-4.35)**2/shape_km + 1.528
-        #
-        #return np.piecewise(shape_km, [shape_km <= 4.35, shape_km > 4.35], [lam_Hk_low, lam_Hk_high])
+            return np.piecewise(shape_km, [shape_km <= 4., shape_km > 4.], [lam_Hk_low, lam_Hk_high])
+        else:
+            #Formulae below comes directly from XFOIL sourcecode
+            def lam_Hk_low(shape_km: InputParam) -> InputParam:
+                tmp = shape_km - 4.35
+                return  .0111*tmp**2/(shape_km+1.) - .0278*tmp**3/(shape_km+1.) + 1.528 - .0002*(tmp*shape_km)**2
+
+            def lam_Hk_high(shape_km: InputParam) -> InputParam:
+                return .015*(shape_km-4.35)**2/shape_km + 1.528
+            return np.piecewise(shape_km, [shape_km <= 4.35, shape_km > 4.35], [lam_Hk_low, lam_Hk_high])
 
 
     @staticmethod
@@ -535,6 +584,20 @@ class DrelaGilesLaminar(IBLMethod):
         re_delta_m[abs(re_delta_m) < 1e-9] = 1e-9
         temp = shape_k/(2.*re_delta_m)
 
+        ##TODO trying out a scaling method for c_f
+        #scalefactor = np.ones_like(u_u_e_ratio)
+        #if isinstance(u_u_e_ratio,np.ndarray):
+        #    for i, neg in enumerate(neg_flag):
+        #        if neg:
+        #            pass
+        #        else:
+        #            scalefactor[i] = u_u_e_ratio[i]
+        #else:
+        #    if neg_flag: #Removing decreasing velocity case (towards TE)
+        #        scalefactor = 1.
+        #    else: #Focusing on the LE, where there is a slow velocity/stagnation point
+        #        scalefactor = u_u_e_ratio
+
         def lam_CD_low(shape_km: InputParam) -> InputParam:
             return (0.207 + 0.00205*(4. - shape_km)**5.5)
 
@@ -544,45 +607,47 @@ class DrelaGilesLaminar(IBLMethod):
         return temp*temp2
 
     @staticmethod
-    def _dshape_k_dshape_km(shape_km: InputParam) -> npt.NDArray:
+    def _dshape_k_dshape_km(shape_km: InputParam, src=False) -> npt.NDArray:
         'Add description here'
         shape_km = np.asarray(shape_km)
 
         shape_km[shape_km > 1.84e19] = 1.84e19
         shape_km[abs(shape_km) < 1e-9] = 1e-9
+        #DEBUGGING
+        #src = True
+        #DEBUGGING
+        if not src:
+            def dshapek_low(shape_km: InputParam) -> InputParam:
+                return 0.076*(-2.*(4 - shape_km)/shape_km - (4. - shape_km)**2/shape_km**2)
 
-        def dshapek_low(shape_km: InputParam) -> InputParam:
-            return 0.076*(-2.*(4 - shape_km)/shape_km - (4. - shape_km)**2/shape_km**2)
-        
-        def dshapek_high(shape_km: InputParam) -> InputParam:
-            return 0.04*(2.*(shape_km - 4.)/shape_km - (shape_km - 4.)**2/shape_km**2)
-        
-        return np.piecewise(shape_km, [shape_km <= 4., shape_km > 4.], [dshapek_low, dshapek_high])
+            def dshapek_high(shape_km: InputParam) -> InputParam:
+                return 0.04*(2.*(shape_km - 4.)/shape_km - (shape_km - 4.)**2/shape_km**2)
 
-        #TODO pulled directly from sourcecode
-        #def dshapek_low(shape_km: InputParam) -> InputParam:
-        #    tmp = shape_km - 4.35
-        #    return 0.0111*(2.0*tmp - tmp**2/(shape_km+1.0))/(shape_km+1.0)- 0.0278*(3.0*tmp**2 - tmp**3/(shape_km+1.0))/(shape_km+1.0)- 0.0002*2.0*tmp*shape_km * (tmp + shape_km)
-        #
-        #def dshapek_high(shape_km: InputParam) -> InputParam:
-        #    return 0.015*2.0*(shape_km-4.35)/shape_km - 0.015*(shape_km-4.35)**2/shape_km**2
-        #
-        #return np.piecewise(shape_km, [shape_km <= 4.35, shape_km > 4.35], [dshapek_low, dshapek_high])
+            return np.piecewise(shape_km, [shape_km <= 4., shape_km > 4.], [dshapek_low, dshapek_high])
+        else:
+            #Formulae below pulled directly from sourcecode
+            def dshapek_low(shape_km: InputParam) -> InputParam:
+                tmp = shape_km - 4.35
+                return 0.0111*(2.0*tmp - tmp**2/(shape_km+1.0))/(shape_km+1.0)- 0.0278*(3.0*tmp**2 - tmp**3/(shape_km+1.0))/(shape_km+1.0)- 0.0002*2.0*tmp*shape_km * (tmp + shape_km)
+
+            def dshapek_high(shape_km: InputParam) -> InputParam:
+                return 0.015*2.0*(shape_km-4.35)/shape_km - 0.015*(shape_km-4.35)**2/shape_km**2
+            
+            return np.piecewise(shape_km, [shape_km <= 4.35, shape_km > 4.35], [dshapek_low, dshapek_high])
 
 
     @staticmethod
     def _dshape_k_dx(delta_m: InputParam, shape_km: InputParam, u_e: InputParam, du_e: InputParam, m_e: InputParam, re_delta_m: InputParam, c_f: InputParam) -> InputParam:
         # dH*/dxi, eq 11
         # requires delta_m, shape_ke, H**, u_e, du_e, CD, C_f, shape_d
-        #c_f = DrelaGilesLaminar._c_f_dg(shape_km, re_delta_m)
-        shape_den = DrelaGilesLaminar._shape_den(shape_km, m_e)
-        shape_k = DrelaGilesLaminar._shape_k(shape_km)
-        c_D = DrelaGilesLaminar._c_D(shape_km,shape_k,re_delta_m)
-        shape_d = DrelaGilesLaminar._shape_d(shape_km, m_e)
+        shape_den = DrelaGilesLaminar_OLD._shape_den(shape_km, m_e)
+        shape_k = DrelaGilesLaminar_OLD._shape_k(shape_km)
+        c_D = DrelaGilesLaminar_OLD._c_D(shape_km,shape_k,re_delta_m)
+        shape_d = DrelaGilesLaminar_OLD._shape_d(shape_km, m_e)
         temp1 = 2.*c_D - 0.5*shape_k*c_f
         u_e = np.asarray(u_e) #Avoids divide by zero errors
         u_e[abs(u_e) < 1e-9] = 1e-9
-        temp2 = (2.*shape_den + shape_k*(1. - shape_d))*delta_m*du_e/u_e    
+        temp2 = (2.*shape_den + shape_k*(1. - shape_d))*delta_m*du_e/u_e
         return (1./delta_m)*(temp1 - temp2)
 
 
@@ -638,7 +703,8 @@ class _DrelaGilesSeparationEvent(TermEvent):
         shape_km = f[1]
         u_e = self._u_e(x)
         re_delta_m = u_e*f[0]/self._nu
-        current_cf = DrelaGilesLaminar._c_f_dg(shape_km,re_delta_m)
+        current_cf = DrelaGilesLaminar_OLD._c_f_dg(shape_km,re_delta_m)
+        #print(current_cf)
         return float(current_cf - self._cf_crit)
 
     @override
